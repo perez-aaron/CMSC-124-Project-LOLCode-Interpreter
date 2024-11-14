@@ -2,15 +2,16 @@ import re
 from tkinter import filedialog as fd
 
 token_types = [
+    ('SINGLE_LINE_COMMENT', r'BTW.*'),                          # Catching the comments
     ('IDENTIFIER', r'[A-Za-z][A-Za-z0-9_]*'),
-    ('NUMBAR', r'-?\d+\.\d+'),     
-    ('NUMBR', r'-?\d+'),              
-    ('YARN', r'\”[^\”]*\”'),    
-    ('TROOF', r'(WIN)|(FAIL)'),     
-    ('TYPE', r'(NOOB)|(NUMBR)|(NUMBAR)|(YARN)|(TROOF)'),         
+    ('NUMBAR', r'-?\d+\.\d+'),
+    ('NUMBR', r'-?\d+'),
+    ('YARN', r'\"[^\"]*\"'),
+    ('TROOF', r'(WIN)|(FAIL)'),
+    ('TYPE', r'(NOOB)|(NUMBR)|(NUMBAR)|(YARN)|(TROOF)'),
     ('ASSIGNMENT', r'='),
-    ('SPACE',     r'[ \t]+'),           
-    ('NEWLINE', r'\n'),   
+    ('SPACE', r'[ \t]+'),
+    ('NEWLINE', r'\n'),
 ]
 
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
@@ -36,16 +37,22 @@ def tokenize(code):
     while tokenized is not None:
         type = tokenized.lastgroup
         value = tokenized.group(type)
-        token_arr.append((type, value))
+
+        if type not in ['SPACE', 'NEWLINE']:                    # Ignore spaces and newlines
+            token_arr.append((value.strip(), type))
+
         tokenized = get_token(code, tokenized.end())
     return token_arr
 
-# Example usage
-file_arr = open_file()
-cnt = 1
-for line in file_arr:
-    he = tokenize(line)
-    print("Input: ", line)
-    print("Line ", cnt)
-    print(he)
-    cnt += 1
+def main():
+    file_arr = open_file()
+
+    print(f"{'Lexeme':<40} {'Token Type':<40} {'Line':<40}")
+    print("=" * 85)
+    
+    for line_number, line in enumerate(file_arr, start=1):
+        tokens = tokenize(line)
+        for value, type_ in tokens:
+            print(f"{value:<40} {type_:<40} {line_number:<40}")
+
+main()
