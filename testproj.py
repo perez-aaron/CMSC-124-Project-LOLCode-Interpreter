@@ -1,4 +1,3 @@
-
 import re
 from tkinter import filedialog as fd
 
@@ -14,13 +13,15 @@ token_types = [
     ('NEWLINE', r'\n'),   
 ]
 
-
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
-
 get_token = re.compile(regex).match
 
 def open_file():
     new_file = fd.askopenfilename(title="Open LOLCODE file")
+    if not new_file:                                                # If no file was selected
+        print("No file selected.")
+        return []
+    
     with open(new_file, 'r', encoding='UTF-8-sig') as file:
         file_arr = []
         for line in file:
@@ -28,7 +29,6 @@ def open_file():
             # line = line.split(',')
             file_arr.append(line)
     return file_arr
-
 
 def tokenize(code):
     tokenized = get_token(code)
@@ -49,4 +49,3 @@ for line in file_arr:
     print("Line ", cnt)
     print(he)
     cnt += 1
-    
