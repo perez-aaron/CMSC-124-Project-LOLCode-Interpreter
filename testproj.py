@@ -2,7 +2,13 @@ import re
 from tkinter import filedialog as fd
 
 token_types = [
-    ('SINGLE_LINE_COMMENT', r'BTW.*'),                          # Catching the comments
+    ('SINGLE_LINE_COMMENT', r'BTW.*'),    # Catching the comments
+    ('PROGRAM_START', r'HAI'),  
+    ('PROGRAM_END', r'KTHNXBYE'),  
+    ('VARIABLE_START', r'WAZZUP'),  
+    ('VARIABLE_END', r'BUHBYE'), 
+    ('DECLARATION', r'I HAS A'),
+    ('STRING', r'\"[A-Za-z][A-Za-z0-9_]*\"'),                      
     ('IDENTIFIER', r'[A-Za-z][A-Za-z0-9_]*'),
     ('NUMBAR', r'-?\d+\.\d+'),
     ('NUMBR', r'-?\d+'),
