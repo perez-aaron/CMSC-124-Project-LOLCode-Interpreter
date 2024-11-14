@@ -2,17 +2,28 @@ import re
 from tkinter import filedialog as fd
 
 token_types = [
-    ('SINGLE_LINE_COMMENT', r'BTW.*'),                          # Catching the comments
+    ('SINGLE_LINE_COMMENT', r'BTW.*'),                          
+    ('MULTI_LINE_COMMENT_START', r'OBTW'),    
+    ('MULTI_LINE_COMMENT_END', r'TLDR'), 
+    ('COMMAND', r'(HAI|KTHXBYE|WAZZUP|BUHBYE|I HAS A|ITZ|R|'
+                r'SUM OF|DIFF OF|PRODUKT OF|QUOSHUNT OF|MOD OF|'
+                r'BIGGR OF|SMALLR OF|BOTH OF|EITHER OF|WON OF|'
+                r'NOT|ANY OF|ALL OF|BOTH SAEM|DIFFRINT|SMOOSH|'
+                r'MAEK|A|IS NOW A|VISIBLE|GIMMEH|O RLY\?|YA RLY|'
+                r'MEBBE|NO WAI|OIC|WTF\?|OMG|OMGWTF|IM IN YR|UPPIN|'
+                r'NERFIN|YR|TIL|WILE|IM OUTTA YR|HOW IZ I|IF U SAY SO|'
+                r'GTFO|FOUND YR|I IZ|MKAY)'),
     ('IDENTIFIER', r'[A-Za-z][A-Za-z0-9_]*'),
     ('NUMBAR', r'-?\d+\.\d+'),
     ('NUMBR', r'-?\d+'),
     ('YARN', r'\"[^\"]*\"'),
-    ('TROOF', r'(WIN)|(FAIL)'),
-    ('TYPE', r'(NOOB)|(NUMBR)|(NUMBAR)|(YARN)|(TROOF)'),
+    ('TROOF', r'(WIN|FAIL)'),
+    ('TYPE', r'(NOOB|NUMBR|NUMBAR|YARN|TROOF)'),
     ('ASSIGNMENT', r'='),
     ('SPACE', r'[ \t]+'),
     ('NEWLINE', r'\n'),
 ]
+
 
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
 get_token = re.compile(regex).match
