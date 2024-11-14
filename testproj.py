@@ -2,28 +2,38 @@ import re
 from tkinter import filedialog as fd
 
 token_types = [
-    ('SINGLE_LINE_COMMENT', r'BTW.*'),                          
-    ('MULTI_LINE_COMMENT_START', r'OBTW'),    
-    ('MULTI_LINE_COMMENT_END', r'TLDR'), 
-    ('COMMAND', r'(HAI|KTHXBYE|WAZZUP|BUHBYE|I HAS A|ITZ|R|'
-                r'SUM OF|DIFF OF|PRODUKT OF|QUOSHUNT OF|MOD OF|'
-                r'BIGGR OF|SMALLR OF|BOTH OF|EITHER OF|WON OF|'
-                r'NOT|ANY OF|ALL OF|BOTH SAEM|DIFFRINT|SMOOSH|'
-                r'MAEK|A|IS NOW A|VISIBLE|GIMMEH|O RLY\?|YA RLY|'
-                r'MEBBE|NO WAI|OIC|WTF\?|OMG|OMGWTF|IM IN YR|UPPIN|'
-                r'NERFIN|YR|TIL|WILE|IM OUTTA YR|HOW IZ I|IF U SAY SO|'
-                r'GTFO|FOUND YR|I IZ|MKAY)'),
+    ('SINGLE_LINE_COMMENT', r'BTW.*'),
+    ('MULTI_LINE_COMMENT_START', r'OBTW'),
+    ('MULTI_LINE_COMMENT_END', r'TLDR'),
+    ('PROGRAM_START', r'HAI'),  
+    ('PROGRAM_END', r'KTHNXBYE'),  
+    ('VARIABLE_START', r'WAZZUP'),  
+    ('VARIABLE_END', r'BUHBYE'), 
+    ('DECLARATION', r'I HAS A'),
+    ('DECLARATION_ASSIGNMENT', r'ITZ'),
+    ('INPUT', r'GIMMEH'),
+    ('PRINT', r'VISIBLE'),
+    ('ASSIGNMENT', r'R'),
+    ('CONCATENATION', r'SMOOSH'),
+    ('ARITHMETIC', r'(SUM OF)|(DIFF OF)|(PRODUKT OF)|(QUOSHUNT OF)|(BIGGR OF)|(SMALLR OF)|(MOD OF)'),
+    ('BOOLEAN', r'(BOTH OF)|(EITHER OF)|(WON OF)|(NOT)|(ALL)|(ANY)'),
+    ('COMPARISON', r'(BOTH SAEM)|(DIFFRINT)'),
+    ('TYPECAST', r'(MAEK)|(IS NOW A)'),
+    ('CONDITIONAL', r'(O RLY\?|YA RLY|MEBBE|NO WAI|OIC)'),
+    ('SWITCH', r'(WTF\?|OMG|OMGWTF)'),
+    ('LOOP', r'(IM IN YR|UPPIN|NERFIN|YR|TIL|WILE|IM OUTTA YR)'),
+    ('FUNCTION', r'(HOW IZ I|IF U SAY SO|GTFO|FOUND YR|I IZ)'),
+    ('CONFIRMATION', r'MKAY'),
+    ('STRING', r'\"[A-Za-z][A-Za-z0-9_]*\"'),                      
     ('IDENTIFIER', r'[A-Za-z][A-Za-z0-9_]*'),
     ('NUMBAR', r'-?\d+\.\d+'),
     ('NUMBR', r'-?\d+'),
     ('YARN', r'\"[^\"]*\"'),
-    ('TROOF', r'(WIN|FAIL)'),
-    ('TYPE', r'(NOOB|NUMBR|NUMBAR|YARN|TROOF)'),
-    ('ASSIGNMENT', r'='),
+    ('TROOF', r'(WIN)|(FAIL)'),
+    ('TYPE', r'(NOOB)|(NUMBR)|(NUMBAR)|(YARN)|(TROOF)'),
     ('SPACE', r'[ \t]+'),
     ('NEWLINE', r'\n'),
 ]
-
 
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
 get_token = re.compile(regex).match
