@@ -6,11 +6,11 @@ import re
 from tkinter import filedialog as fd
 
 token_types = [
-    ('SINGLE_LINE_COMMENT', r'BTW.*'),
+    ('SINGLE_LINE_COMMENT', r'BTW'),
     ('MULTI_LINE_COMMENT_START', r'OBTW'),
     ('MULTI_LINE_COMMENT_END', r'TLDR'),
     ('PROGRAM_START', r'HAI'),  
-    ('PROGRAM_END', r'KTHNXBYE'),  
+    ('PROGRAM_END', r'KTHXBYE'),  
     ('VARIABLE_START', r'WAZZUP'),  
     ('VARIABLE_END', r'BUHBYE'), 
     ('DECLARATION', r'I HAS A'),
@@ -29,7 +29,7 @@ token_types = [
     ('LOOP', r'(IM IN YR|UPPIN|NERFIN|YR|TIL|WILE|IM OUTTA YR)'),
     ('FUNCTION', r'(HOW IZ I|IF U SAY SO|GTFO|FOUND YR|I IZ)'),
     ('CONFIRMATION', r'MKAY'),
-    ('YARN', r'(\"[^\"]*\")|(\".*\")'),    
+    ('YARN', r'(\"[^\"]*\")'),    
     ('TYPE', r'(NOOB)|(NUMBR)|(NUMBAR)|(YARN)|(TROOF)'),        
     ('NUMBAR', r'-?\d+\.\d+'),
     ('NUMBR', r'-?\d+'),
@@ -38,8 +38,18 @@ token_types = [
     ('SPACE', r'[ \t]+'),
     ('NEWLINE', r'\n'),
 ]
+token_comment = [
+    ('MULTI_LINE_COMMENT_END', r'TLDR'),  
+    ('NEWLINE', r'\n'), 
+    ('COMMENT_BODY', r'(.*?)(?=\n|TLDR)'), 
+]
+
+
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
 get_token = re.compile(regex).match
+
+regex2 = '|'.join('(?P<%s>%s)' % pair for pair in token_comment)
+get_token2 = re.compile(regex2).match
 
 class LOL:
     def __init__(self, root):
@@ -117,13 +127,42 @@ class LOL:
         self.file = file_arr
 
     def tokenize(self,code):
-        tokenized = get_token(code)
-        token_arr = []
+        if self.multi_bool == False:
+            tokenized = get_token(code)
+            token_arr = []
+        else:
+            tokenized = get_token2(code)
+            token_arr = []
+
         while tokenized is not None:
             type = tokenized.lastgroup
             value = tokenized.group(type)
 
-            if type not in ['SPACE', 'NEWLINE']:                    # Ignore spaces and newlines
+
+            if type == 'MULTI_LINE_COMMENT_END':
+                self.multi_bool = False
+                token_arr.append((value.strip(), type))
+                tokenized = get_token(code, tokenized.end())
+                continue
+
+            elif self.multi_bool == True:
+                if type != 'NEWLINE':
+                    token_arr.append((value.strip(), type))
+                tokenized = get_token2(code, tokenized.end())
+                continue
+
+            elif type == 'SINGLE_LINE_COMMENT':
+                token_arr.append((value.strip(), type))
+                tokenized = get_token2(code, tokenized.end())
+                continue
+
+            elif type == 'MULTI_LINE_COMMENT_START':
+                token_arr.append((value.strip(), type)) 
+                tokenized = get_token(code, tokenized.end()) 
+                self.multi_bool = True
+                continue
+
+            elif type not in ['SPACE', 'NEWLINE']:                    # Ignore spaces and newlines
                 token_arr.append((value.strip(), type))
 
             tokenized = get_token(code, tokenized.end())
@@ -135,6 +174,7 @@ class LOL:
         print("=" * 85)
 
         all=[]
+        self.multi_bool = False
 
         for line_number, line in enumerate(file_arr, start=1):
             tokens = self.tokenize(line)
@@ -150,6 +190,8 @@ class LOL:
 
         for word in file_arr:
             self.code_text.insert(tk.END,word)
+        
+        print(self.multi_bool)
     
     def reset(self):
         self.code_text.delete(1.0, tk.END)
