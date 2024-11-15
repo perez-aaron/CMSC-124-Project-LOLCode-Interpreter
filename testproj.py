@@ -37,6 +37,7 @@ token_types = [
     ('IDENTIFIER', r'[A-Za-z][A-Za-z0-9_]*'),
     ('SPACE', r'[ \t]+'),
     ('NEWLINE', r'\n'),
+    ('ERROR', r'.'),
 ]
 token_comment = [
     ('MULTI_LINE_COMMENT_END', r'TLDR'),  
@@ -138,8 +139,11 @@ class LOL:
             type = tokenized.lastgroup
             value = tokenized.group(type)
 
+            if type == 'ERROR':
+                self.error = True
+                break
 
-            if type == 'MULTI_LINE_COMMENT_END':
+            elif type == 'MULTI_LINE_COMMENT_END':
                 self.multi_bool = False
                 token_arr.append((value.strip(), type))
                 tokenized = get_token(code, tokenized.end())
@@ -175,12 +179,17 @@ class LOL:
 
         all=[]
         self.multi_bool = False
+        self.error = False
 
         for line_number, line in enumerate(file_arr, start=1):
-            tokens = self.tokenize(line)
-            all.append(tokens)
-            for value, type_ in tokens:
-                print(f"{value:<40} {type_:<40} {line_number:<40}")
+            if self.error != True:
+                tokens = self.tokenize(line)
+                all.append(tokens)
+                if self.error != True:
+                    for value, type_ in tokens:
+                        print(f"{value:<40} {type_:<40} {line_number:<40}")
+                else:
+                    print("Error: Lexeme Mismatch")
 
         for lexeme in all:
             if(len(lexeme) != 0):
