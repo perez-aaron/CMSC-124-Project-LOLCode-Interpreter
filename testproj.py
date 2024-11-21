@@ -109,7 +109,7 @@ class LOL:
         #GRID
         self.root.columnconfigure(0, weight = 1)
         self.root.columnconfigure(1, weight = 8)
-        self.root.columnconfigure(2, weight = 8)
+        self.root.columnconfigure(2, weight = 16)
         self.root.rowconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=40)
 
@@ -124,7 +124,6 @@ class LOL:
             file_arr = []
             for line in file:
                 file_arr.append(line)
-        print(file_arr)
         self.file = file_arr
 
     def tokenize(self,code):
@@ -190,18 +189,19 @@ class LOL:
                         print(f"{value:<40} {type_:<40} {line_number:<40}")
                 else:
                     print("Error: Lexeme Mismatch")
-
-        for lexeme in all:
-            if(len(lexeme) != 0):
-                for i in range(len(lexeme)):
-                    print(lexeme[i][0],lexeme[i][1])
-                    self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
-
+        
         for word in file_arr:
             self.code_text.insert(tk.END,word)
+
+        if(self.error == True):
+            self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
+            return
+        else:
+            for lexeme in all:
+                if(len(lexeme) != 0):
+                    for i in range(len(lexeme)):
+                        self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
         
-        print(self.multi_bool)
-    
     def reset(self):
         self.code_text.delete(1.0, tk.END)
         for item in self.lex_text.get_children():
