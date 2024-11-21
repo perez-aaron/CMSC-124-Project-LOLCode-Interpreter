@@ -201,6 +201,122 @@ class LOL:
                 if(len(lexeme) != 0):
                     for i in range(len(lexeme)):
                         self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
+                        
+        self.syntax_analyze(''.join(file_arr))
+
+
+
+    def match(self, type):
+        current = self.tokens[self.pos]
+
+        if current and current[1] == type:
+            self.pos += 1
+            return True
+        else:
+            return False
+        
+    def syntax_analyze(self, code):
+        self.tokens = self.tokenize(code)
+        self.pos = 0
+        self.errors = []
+        self.parse_program()
+
+        if self.errors:
+            print("Syntax Error:")
+
+            for error in self.errors:
+                print(error)
+        else:
+            print("Completed successfully!")
+
+    def parse_program(self):
+
+        if not self.match('PROGRAM_START'):
+            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos]}")
+
+        count = len(self.tokens)
+        
+        while self.pos < count:
+            curr = self.tokens[self.pos]
+            if curr[1] == 'PROGRAM_END':
+                self.match('PROGRAM_END')
+                break
+
+            elif curr[1] == 'DECLARATION':
+                self.match('DECLARATION')
+                self.declaration()
+
+            elif curr[1] == 'INPUT':
+                self.match('INPUT')
+                self.getinput()
+
+            elif curr[1] == 'PRINT':
+                self.match('PRINT')
+                self.printoutput()
+
+            elif curr[1] == 'CONDITIONAL':
+                self.match('CONDITIONAL')
+                self.conditionals()
+
+            elif curr[1] == 'LOOP':
+                self.match('LOOP')
+                self.loops()
+
+
+            elif curr[1] == 'ARITHMETIC':
+                self.match('ARITHMETIC')
+                self.arithmetic()
+            
+            else:
+                self.errors.append(f"Error: Unexpected token {curr[1]}")
+                self.pos += 1
+
+    def declaration(self):
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected {'IDENTIFIER'}, but found {self.tokens[self.pos][1]}")
+
+        if not self.match('DECLARATION_ASSIGNMENT'):
+            pass
+        else:
+            if not self.match('IDENTIFIER'):
+                self.errors.append(f"Error: Expected 'IDENTIFIER',but found {self.tokens[self.pos][1]}")
+
+    def getinput(self):
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+
+    def printoutput(self):
+        pass
+    
+    def loops(self):
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            
+        if not self.match('TIL'):
+            self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]}")
+
+    def conditionals(self):
+        if not self.match('YA RLY'):
+            self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]}")
+
+        self.expression()
+
+        if not self.match('NO WAI'):
+            self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]}")
+    
+    def arithmetic(self):
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+
+        while self.match('CONNECTOR'):
+            if not self.match('IDENTIFIER'):
+                self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+
+    def expression(self):
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
+            self.pos += 1
+        else:
+            self.errors.append(f"Error: Expected an expression, but found {self.tokens[self.pos][1]}")
         
     def reset(self):
         self.code_text.delete(1.0, tk.END)
