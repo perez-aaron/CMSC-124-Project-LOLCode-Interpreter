@@ -45,7 +45,6 @@ token_comment = [
     ('COMMENT_BODY', r'(.*?)(?=\n|TLDR)'), 
 ]
 
-
 regex = '|'.join('(?P<%s>%s)' % pair for pair in token_types)
 get_token = re.compile(regex).match
 
@@ -59,6 +58,7 @@ class LOL:
         self.root.geometry("1500x700")
         self.root.title("HELLO, HAI, KTHXBYE INTERPRETER")
         self.create_widgets()
+
     def create_widgets(self):
         bold_font = font.Font(family="Helvetica", size=12, weight="bold")
 
@@ -262,11 +262,22 @@ class LOL:
                 self.match('LOOP')
                 self.loops()
 
-
             elif curr[1] == 'ARITHMETIC':
                 self.match('ARITHMETIC')
                 self.arithmetic()
+
+            elif curr[1] == 'ASSIGNMENT':
+                self.match('ASSIGNMENT')
+                self.assignment()
             
+            elif curr[1] == 'SWITCH':
+                self.match('SWITCH')
+                self.switch()
+
+            elif curr[1] == 'FUNCTION':
+                self.match('FUNCTION')
+                self.function()
+
             else:
                 self.errors.append(f"Error: Unexpected token {curr[1]}")
                 self.pos += 1
@@ -286,7 +297,11 @@ class LOL:
             self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
     def printoutput(self):
-        pass
+        while self.pos < len(self.tokens):
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER']:
+                self.expression()
+            else:
+                break
     
     def loops(self):
         if not self.match('IDENTIFIER'):
@@ -296,6 +311,9 @@ class LOL:
             self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]}")
 
     def conditionals(self):
+        if not self.match('CONDITIONAL'):
+            self.errors.append(f"Error: Expected 'CONDITIONAL', but found {self.tokens[self.pos][1]}")
+
         if not self.match('YA RLY'):
             self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]}")
 
@@ -303,6 +321,9 @@ class LOL:
 
         if not self.match('NO WAI'):
             self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]}")
+
+        if not self.match('OIC'):
+            self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]}")
     
     def arithmetic(self):
         if not self.match('IDENTIFIER'):
@@ -311,6 +332,47 @@ class LOL:
         while self.match('CONNECTOR'):
             if not self.match('IDENTIFIER'):
                 self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+
+    def assignment(self):
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+        
+        if not self.match('ASSIGNMENT'):
+            self.errors.append(f"Error: Expected 'ASSIGNMENT', but found {self.tokens[self.pos][1]}")
+        
+        self.expression()
+
+    def switch(self):
+        if not self.match('SWITCH'):
+            self.errors.append(f"Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
+
+        while self.pos < len(self.tokens):
+            if self.match('OMG'):
+                self.expression()
+            elif self.match('OMGWTF'):
+                self.expression()
+            elif self.match('OIC'):
+                break
+            else:
+                self.errors.append(f"Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
+                self.pos += 1
+
+    def function(self):
+        if not self.match('FUNCTION'):
+            self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")
+        if not self.match('IDENTIFIER'):
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+        
+        while self.pos < len(self.tokens):
+            curr = self.tokens[self.pos]
+            if curr[1] == 'FOUND YR':
+                self.match('FOUND YR')
+                self.expression()
+            elif curr[1] == 'IF U SAY SO':
+                self.match('IF U SAY SO')
+                break
+            else:
+                self.parse_program()
 
     def expression(self):
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
