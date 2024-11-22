@@ -117,9 +117,8 @@ class LOL:
 
         style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
 
-        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Error","Mismatch"), show = "headings", style="Treeview")
+        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Error"), show = "headings", style="Treeview")
         self.syntax_text.heading("Error", text="Error")
-        self.syntax_text.heading("Mismatch", text="Mismatch")
         self.syntax_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.syntax_scrollbar = tk.Scrollbar(self.syntax_frame, orient=tk.VERTICAL, command=self.syntax_text.yview, background="grey")
         self.syntax_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -225,8 +224,6 @@ class LOL:
                         
         self.syntax_analyze(''.join(file_arr))
 
-
-
     def match(self, type):
         current = self.tokens[self.pos]
 
@@ -247,10 +244,11 @@ class LOL:
 
             for error in self.errors:
                 print(error)
-                self.syntax_text.insert("", "end", value=(error, error))
+                self.syntax_text.insert("", "end", values=(error,))
 
         else:
             print("Completed successfully!")
+            self.syntax_text.insert("", "end", values=("Completed",))
 
     def parse_program(self):
 
