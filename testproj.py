@@ -106,17 +106,38 @@ class LOL:
         self.lex_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.lex_text.config(yscrollcommand=self.lex_scrollbar.set)
 
+        #SYNTAX FRAME
+        self.syntax_frame = tk.Frame(self.root, background="#1F1F1F")
+        self.syntax_label = tk.Label(self.syntax_frame, text="SYNTAX",font=bold_font,fg='white',background='#1F1F1F')
+        self.syntax_label.pack(side=tk.TOP)
+
+        style = ttk.Style()
+        style.configure("Treeview", background="#292929", fieldbackground="#292929", foreground="white")
+        style.configure("Treeview.Heading", background="#292929", foreground="black")  
+
+        style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
+
+        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Error","Mismatch"), show = "headings", style="Treeview")
+        self.syntax_text.heading("Error", text="Error")
+        self.syntax_text.heading("Mismatch", text="Mismatch")
+        self.syntax_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.syntax_scrollbar = tk.Scrollbar(self.syntax_frame, orient=tk.VERTICAL, command=self.syntax_text.yview, background="grey")
+        self.syntax_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.syntax_text.config(yscrollcommand=self.lex_scrollbar.set)
+
         #GRID
         self.root.columnconfigure(0, weight = 1)
         self.root.columnconfigure(1, weight = 8)
         self.root.columnconfigure(2, weight = 16)
         self.root.rowconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=40)
+        self.root.rowconfigure(2, weight=40)
 
         self.title_frame.grid(row=0, column=0, columnspan=3,sticky='nswe')
-        self.file_frame.grid(row=1,column=0,sticky='nswe')
-        self.code_frame.grid(row=1,column=1,sticky='nswe')
+        self.file_frame.grid(row=1,column=0, rowspan=3,sticky='nswe')
+        self.code_frame.grid(row=1,column=1, rowspan=3,sticky='nswe')
         self.lex_frame.grid(row=1,column=2,sticky='nswe')
+        self.syntax_frame.grid(row=2,column=2,sticky='nswe')
 
     def open_file(self):
         new_file = fd.askopenfilename(title="Open LOLCODE file")
@@ -226,6 +247,8 @@ class LOL:
 
             for error in self.errors:
                 print(error)
+                self.syntax_text.insert("", "end", value=(error, error))
+
         else:
             print("Completed successfully!")
 
@@ -384,6 +407,8 @@ class LOL:
         self.code_text.delete(1.0, tk.END)
         for item in self.lex_text.get_children():
             self.lex_text.delete(item)
+        for item in self.syntax_text.get_children():
+            self.syntax_text.delete(item)
 
 #CREATE AND RUN THE APP
 root = tk.Tk()
