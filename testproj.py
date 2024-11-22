@@ -189,6 +189,8 @@ class LOL:
                 token_arr.append((value.strip(), type))
 
             tokenized = get_token(code, tokenized.end())
+        for i in token_arr:
+            print (i)
         return token_arr
 
     def lexical(self):
@@ -197,11 +199,13 @@ class LOL:
         print("=" * 85)
 
         all=[]
+        self.lex_line=[]
         self.multi_bool = False
         self.error = False
 
         for line_number, line in enumerate(file_arr, start=1):
             if self.error != True:
+                self.lex_line.append(line_number)
                 tokens = self.tokenize(line)
                 all.append(tokens)
                 if self.error != True:
@@ -221,8 +225,9 @@ class LOL:
                 if(len(lexeme) != 0):
                     for i in range(len(lexeme)):
                         self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
-                        
+
         self.syntax_analyze(''.join(file_arr))
+        
 
     def match(self, type):
         current = self.tokens[self.pos]
@@ -269,6 +274,7 @@ class LOL:
         
         while self.pos < count:
             curr = self.tokens[self.pos]
+            print(curr)
             if curr[1] == 'PROGRAM_END':
                 self.match('PROGRAM_END')
                 break
@@ -319,9 +325,24 @@ class LOL:
                 self.match('FUNCTION')
                 self.function()
 
+            elif curr[1] == 'VARIABLE_START':
+                self.variables_start()
+
+            elif curr[1] == 'VARIABLE_END':
+                self.variables_end()
             else:
                 self.errors.append(f"Error: Unexpected token {curr[1]}")
                 self.pos += 1
+
+    def variables_start(self):
+        if not self.match('VARIABLE_START'):
+            self.errors.append(f"Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
+
+
+    def variables_end(self):
+        if not self.match('VARIABLE_END'):
+            self.errors.append(f"Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
+
 
     def declaration(self):
         if not self.match('IDENTIFIER'):
@@ -330,7 +351,11 @@ class LOL:
         if not self.match('DECLARATION_ASSIGNMENT'):
             pass
         else:
-            if not self.match('IDENTIFIER'):
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER']:
+                self.pos += 1
+            elif self.match('ARITHMETIC'):
+                self.arithmetic()
+            else:
                 self.errors.append(f"Error: Expected 'IDENTIFIER',but found {self.tokens[self.pos][1]}")
 
     def getinput(self):
@@ -339,7 +364,7 @@ class LOL:
 
     def printoutput(self):
         while self.pos < len(self.tokens):
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR']:
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC']:
                 self.pos += 1
             else:
                 break
@@ -367,12 +392,17 @@ class LOL:
             self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]}")
     
     def arithmetic(self):
-        if not self.match('IDENTIFIER'):
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+            self.pos += 1
+        else:
             self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
         while self.match('CONNECTOR'):
-            if not self.match('IDENTIFIER'):
+            if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+                self.pos += 1
+            else:
                 self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+
 
     def assignment(self):
         if not self.match('IDENTIFIER'):
