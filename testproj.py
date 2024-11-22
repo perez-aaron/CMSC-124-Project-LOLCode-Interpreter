@@ -238,8 +238,8 @@ class LOL:
         
     def syntax_analyze(self, code):
         self.tokens = self.tokenize(code)
-        self.pos = 0
         self.errors = []
+        self.pos = 0
         self.parse_program()
 
         if self.errors:
@@ -254,6 +254,16 @@ class LOL:
 
     def parse_program(self):
 
+        if self.tokens[self.pos][1] == 'SINGLE_LINE_COMMENT':
+            self.pos += 1
+            self.match('COMMENT_BODY')
+        
+        elif self.tokens[self.pos][1] == 'MULTI_LINE_COMMENT_START':
+            self.pos += 1
+            self.match('COMMENT_BODY')
+            if not self.match('MULTI_LINE_COMMENT_END'):
+                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
+
         if not self.match('PROGRAM_START'):
             self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos]}")
 
@@ -264,6 +274,16 @@ class LOL:
             if curr[1] == 'PROGRAM_END':
                 self.match('PROGRAM_END')
                 break
+
+            if self.tokens[self.pos][1] == 'SINGLE_LINE_COMMENT':
+                self.pos += 1
+                self.match('COMMENT_BODY')
+        
+            elif self.tokens[self.pos][1] == 'MULTI_LINE_COMMENT_START':
+                self.pos += 1
+                self.match('COMMENT_BODY')
+                if not self.match('MULTI_LINE_COMMENT_END'):
+                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
 
             elif curr[1] == 'DECLARATION':
                 self.match('DECLARATION')
@@ -321,8 +341,8 @@ class LOL:
 
     def printoutput(self):
         while self.pos < len(self.tokens):
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER']:
-                self.expression()
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR']:
+                self.pos += 1
             else:
                 break
     
