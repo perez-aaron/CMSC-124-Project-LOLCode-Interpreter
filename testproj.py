@@ -240,7 +240,7 @@ class LOL:
     def match(self, type):
         current = self.tokens[self.pos]
 
-        if current and current[1] == type:
+        if current and (current[1] == type or current[0] == type):
             self.pos += 1
             return True
         else:
@@ -436,31 +436,35 @@ class LOL:
                 self.pos += 1
 
     def function(self):
-        if not self.match('FUNCTION'):
-            self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-        
+        if not self.tokens[self.pos][0] == 'HOW IZ I':
+            if not self.tokens[self.pos][0] == 'IF U SAY SO':
+                if not self.tokens[self.pos][0] == 'I IZ':
+                    self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
         while self.pos < len(self.tokens):
             curr = self.tokens[self.pos]
             if curr[0] == 'FOUND YR':
                 self.match('FOUND YR')
-                self.expression()
             elif curr[0] == 'IF U SAY SO':
                 self.match('IF U SAY SO')
-                break
+                return True
             elif curr[0] == 'GTFO':
                 self.match('GTFO')
-                break
+                return True
+            elif curr[1] == 'ARITHMETIC':
+                self.match('ARITHMETIC')
+            elif curr[1] == 'PRINT':
+                self.match("PRINT")
+                self.printoutput()
             elif curr[0] == 'YR':
                 self.match('YR')
             elif curr[0] == 'AN':
                 self.match('AN')
             elif curr[1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
                 self.expression()
+            elif curr[1] == 'FUNCTION':
+                self.match('FUNCTION')
             else:
-                print("error")
-                self.pos += 1
+                return False
 
     def expression(self):
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
