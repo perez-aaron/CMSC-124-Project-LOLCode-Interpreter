@@ -56,6 +56,7 @@ class LOL:
     def __init__(self, root):
         self.root = root
         self.file = None
+        self.tokens = []
         self.root.geometry("1500x700")
         self.root.title("HELLO, HAI, KTHXBYE INTERPRETER")
         self.create_widgets()
@@ -157,7 +158,7 @@ class LOL:
             for line in file_arr:
                 self.code_text.insert(tk.END, line)
 
-    def tokenize(self,code):
+    def tokenize(self,code, line):
         if self.multi_bool == False:
             tokenized = get_token(code)
             token_arr = []
@@ -175,29 +176,29 @@ class LOL:
 
             elif type == 'MULTI_LINE_COMMENT_END':
                 self.multi_bool = False
-                token_arr.append((value.strip(), type))
+                token_arr.append((value.strip(), type, line))
                 tokenized = get_token(code, tokenized.end())
                 continue
 
             elif self.multi_bool == True:
                 if type != 'NEWLINE':
-                    token_arr.append((value.strip(), type))
+                    token_arr.append((value.strip(), type, line))
                 tokenized = get_token2(code, tokenized.end())
                 continue
 
             elif type == 'SINGLE_LINE_COMMENT':
-                token_arr.append((value.strip(), type))
+                token_arr.append((value.strip(), type, line))
                 tokenized = get_token2(code, tokenized.end())
                 continue
 
             elif type == 'MULTI_LINE_COMMENT_START':
-                token_arr.append((value.strip(), type)) 
+                token_arr.append((value.strip(), type, line)) 
                 tokenized = get_token(code, tokenized.end()) 
                 self.multi_bool = True
                 continue
 
             elif type not in ['SPACE', 'NEWLINE']:                    # Ignore spaces and newlines
-                token_arr.append((value.strip(), type))
+                token_arr.append((value.strip(), type, line))
 
             tokenized = get_token(code, tokenized.end())
         for i in token_arr:
@@ -226,10 +227,11 @@ class LOL:
             if self.error:
                 break
             self.lex_line.append(line_number)
-            tokens = self.tokenize(line)
+            tokens = self.tokenize(line, line_number)
+            self.tokens.append(tokens)
             all_tokens.append(tokens)
             if not self.error:
-                for value, type_ in tokens:
+                for value, type_ ,line in tokens:
                     print(f"{value:<40} {type_:<40} {line_number:<40}")
             else:
                 print("Lexeme Error: Lexeme Mismatch")
@@ -243,7 +245,7 @@ class LOL:
                 for j in range(len(all_tokens[i])):
                     self.lex_text.insert("", "end", values=(all_tokens[i][j][0], all_tokens[i][j][1], self.lex_line[i]))
                     
-        self.syntax_analyze(code_content)
+        self.syntax_analyze()
 
         print("SYMBOL TABLE: \n",self.symbol_table)
 
@@ -261,8 +263,11 @@ class LOL:
             return False   
 
 
-    def syntax_analyze(self, code):
-        self.tokens = self.tokenize(code)
+    def syntax_analyze(self):
+        print("HATDOG\n", self.tokens, "\nHATDOG\n")
+
+        self.tokens = [item for sublist in self.tokens for item in sublist]
+        print("HATDOG\n", self.tokens, "\nHATDOG\n")
         self.errors = []
         self.pos = 0
         self.parse_program()
