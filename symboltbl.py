@@ -231,7 +231,7 @@ class LOL:
                 for value, type_ in tokens:
                     print(f"{value:<40} {type_:<40} {line_number:<40}")
             else:
-                print("Error: Lexeme Mismatch")
+                print("Lexeme Error: Lexeme Mismatch")
 
         if self.error:
             self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
@@ -372,30 +372,30 @@ class LOL:
 
                 self.variables_end()
             else:
-                self.errors.append(f"Error: Unexpected token {curr[1]}")
+                self.errors.append(f"Syntax Error: Unexpected token {curr[1]}")
                 self.pos += 1
+                break
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
-            self.errors.append(f"Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
 
 
     def variables_end(self):
         if not self.match('VARIABLE_END'):
-            self.errors.append(f"Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
 
 
     def declaration(self):
-        """ Handle the declaration of variables in the program """
         if self.tokens[self.pos][1] == ('IDENTIFIER'):
             var_name = self.tokens[self.pos][0] 
             self.match('IDENTIFIER')
         else:
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
             return
 
         if not self.match('DECLARATION_ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'ITZ', but found {self.tokens[self.pos][1]}")
+            self.symbol_table[var_name] = 'NOVAL'
             return
         
         var_type = self.tokens[self.pos][1]  
@@ -413,7 +413,6 @@ class LOL:
             self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
     def printoutput(self):
-        """ Handle print statements in the program """
         while self.pos < len(self.tokens):
             if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC']:
                 self.pos += 1
@@ -448,7 +447,7 @@ class LOL:
                 self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
             self.pos += 1
         else:
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
         while self.match('CONNECTOR'):
             if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
@@ -456,12 +455,12 @@ class LOL:
                     self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
                 self.pos += 1
             else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
 
     def assignment(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
             return
         
         var_name = self.tokens[self.pos][0] 
@@ -472,14 +471,14 @@ class LOL:
         self.pos += 1  
 
         if not self.match('ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'R', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'R', but found {self.tokens[self.pos][1]}")
             return
 
         self.expression()
 
     def switch(self):
         if not self.match('SWITCH'):
-            self.errors.append(f"Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
 
         while self.pos < len(self.tokens):
             if self.match('OMG'):
@@ -489,14 +488,14 @@ class LOL:
             elif self.match('OIC'):
                 break
             else:
-                self.errors.append(f"Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
                 self.pos += 1
 
     def function(self):
         if not self.tokens[self.pos][0] == 'HOW IZ I':
             if not self.tokens[self.pos][0] == 'IF U SAY SO':
                 if not self.tokens[self.pos][0] == 'I IZ':
-                    self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
+                    self.errors.append(f"Syntax Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
         while self.pos < len(self.tokens):
             curr = self.tokens[self.pos]
             if curr[0] == 'FOUND YR':
@@ -532,7 +531,7 @@ class LOL:
                     self.errors.append(f"Error: Variable '{var_name}' is not declared")
             self.pos += 1
         else:
-            self.errors.append(f"Error: Expected an expression, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]}")
     
     def reset(self):
         # self.code_text.delete(1.0, tk.END)
