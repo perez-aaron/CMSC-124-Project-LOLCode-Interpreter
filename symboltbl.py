@@ -53,13 +53,13 @@ get_token2 = re.compile(regex2).match
 
 class LOL:
 #------------------------------------------------ GUI --------------------------------------------------------------------------------------
-
     def __init__(self, root):
         self.root = root
         self.file = None
         self.root.geometry("1500x700")
         self.root.title("HELLO, HAI, KTHXBYE INTERPRETER")
         self.create_widgets()
+        self.symbol_table = {}  
 
     def create_widgets(self):
         bold_font = font.Font(family="Helvetica", size=12, weight="bold")
@@ -100,9 +100,10 @@ class LOL:
 
         style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
 
-        self.lex_text = ttk.Treeview(self.lex_frame, columns = ("Lexemes","Tokens"), show = "headings", style="Treeview")
+        self.lex_text = ttk.Treeview(self.lex_frame, columns = ("Lexemes","Tokens", "Lines"), show = "headings", style="Treeview")
         self.lex_text.heading("Lexemes", text="Lexemes")
         self.lex_text.heading("Tokens", text="Tokens")
+        self.lex_text.heading("Lines", text="Lines")
         self.lex_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.lex_scrollbar = tk.Scrollbar(self.lex_frame, orient=tk.VERTICAL, command=self.lex_text.yview, background="grey")
         self.lex_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -110,10 +111,7 @@ class LOL:
 
         #SYNTAX FRAME
         self.syntax_frame = tk.Frame(self.root, background="#1F1F1F")
-
         self.syntax_label = tk.Label(self.syntax_frame, text="INTERPRETER",font=bold_font,fg='white',background='#1F1F1F')
-
-
         self.syntax_label.pack(side=tk.TOP)
 
         style = ttk.Style()
@@ -234,19 +232,20 @@ class LOL:
                 for value, type_ in tokens:
                     print(f"{value:<40} {type_:<40} {line_number:<40}")
             else:
-                print("Error: Lexeme Mismatch")
+                print("Lexeme Error: Lexeme Mismatch")
 
         if self.error:
             self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
             return
 
-        for lexeme in all_tokens:
-            if lexeme:
-                for i in range(len(lexeme)):
-                    self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
-
+        for i in range (len(all_tokens)):
+            if all_tokens[i]:
+                for j in range(len(all_tokens[i])):
+                    self.lex_text.insert("", "end", values=(all_tokens[i][j][0], all_tokens[i][j][1], self.lex_line[i]))
+                    
         self.syntax_analyze(code_content)
-    
+
+        print("SYMBOL TABLE: \n",self.symbol_table)
 
         
 #-------------------------------------------------------------------------------------------------------------------------------------------     
@@ -260,6 +259,7 @@ class LOL:
             return True
         else:
             return False   
+
 
     def syntax_analyze(self, code):
         self.tokens = self.tokenize(code)
@@ -374,32 +374,41 @@ class LOL:
 
                 self.variables_end()
             else:
-                self.errors.append(f"Error: Unexpected token {curr[1]}")
+                self.errors.append(f"Syntax Error: Unexpected token {curr[1]}")
                 self.pos += 1
+                break
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
-            self.errors.append(f"Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
 
 
     def variables_end(self):
         if not self.match('VARIABLE_END'):
-            self.errors.append(f"Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
 
 
     def declaration(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected {'IDENTIFIER'}, but found {self.tokens[self.pos][1]}")
+        if self.tokens[self.pos][1] == ('IDENTIFIER'):
+            var_name = self.tokens[self.pos][0] 
+            self.match('IDENTIFIER')
+        else:
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            return
 
         if not self.match('DECLARATION_ASSIGNMENT'):
-            pass
-        else:
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER']:
-                self.pos += 1
-            elif self.match('ARITHMETIC'):
-                self.arithmetic()
-            else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER',but found {self.tokens[self.pos][1]}")
+            self.symbol_table[var_name] = 'NOVAL'
+            return
+        
+        var_type = self.tokens[self.pos][1]  
+        
+
+        self.symbol_table[var_name] = var_type
+        print(f"Declared {var_name} of type {var_type}")
+
+
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
+            self.pos += 1  
 
     def getinput(self):
         if not self.match('IDENTIFIER'):
@@ -436,29 +445,42 @@ class LOL:
     
     def arithmetic(self):
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+            if self.tokens[self.pos][0] not in self.symbol_table:
+                self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
             self.pos += 1
         else:
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
         while self.match('CONNECTOR'):
             if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+                if self.tokens[self.pos][0] not in self.symbol_table:
+                    self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
                 self.pos += 1
             else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
 
 
     def assignment(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            return
         
+        var_name = self.tokens[self.pos][0] 
+        if var_name not in self.symbol_table:
+            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared")
+            return
+
+        self.pos += 1  
+
         if not self.match('ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'ASSIGNMENT', but found {self.tokens[self.pos][1]}")
-        
+            self.errors.append(f"Syntax Error: Expected 'R', but found {self.tokens[self.pos][1]}")
+            return
+
         self.expression()
 
     def switch(self):
         if not self.match('SWITCH'):
-            self.errors.append(f"Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
 
         while self.pos < len(self.tokens):
             if self.match('OMG'):
@@ -468,14 +490,14 @@ class LOL:
             elif self.match('OIC'):
                 break
             else:
-                self.errors.append(f"Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
                 self.pos += 1
 
     def function(self):
         if not self.tokens[self.pos][0] == 'HOW IZ I':
             if not self.tokens[self.pos][0] == 'IF U SAY SO':
                 if not self.tokens[self.pos][0] == 'I IZ':
-                    self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
+                    self.errors.append(f"Syntax Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
         while self.pos < len(self.tokens):
             curr = self.tokens[self.pos]
             if curr[0] == 'FOUND YR':
@@ -503,334 +525,20 @@ class LOL:
                 return False
 
     def expression(self):
+        """ Handle expressions, evaluating or checking types """
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+                var_name = self.tokens[self.pos][0]
+                if var_name not in self.symbol_table:
+                    self.errors.append(f"Error: Variable '{var_name}' is not declared")
             self.pos += 1
         else:
-            self.errors.append(f"Error: Expected an expression, but found {self.tokens[self.pos][1]}")
-        
+            self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]}")
+    
     def reset(self):
         # self.code_text.delete(1.0, tk.END)
         self.lexical_analyze_button.config(state=tk.NORMAL)
-        for item in self.lex_text.get_children():
-            self.lex_text.delete(item)
-        for item in self.syntax_text.get_children():
-            self.syntax_text.delete(item)
-
-    def open_file(self):
-        new_file = fd.askopenfilename(title="Open LOLCODE file")
-        with open(new_file, 'r', encoding='UTF-8-sig') as file:
-            file_arr = []
-            for line in file:
-                file_arr.append(line)
-        self.file = file_arr
-
-    def tokenize(self,code):
-        if self.multi_bool == False:
-            tokenized = get_token(code)
-            token_arr = []
-        else:
-            tokenized = get_token2(code)
-            token_arr = []
-
-        while tokenized is not None:
-            type = tokenized.lastgroup
-            value = tokenized.group(type)
-
-            if type == 'ERROR':
-                self.error = True
-                break
-
-            elif type == 'MULTI_LINE_COMMENT_END':
-                self.multi_bool = False
-                token_arr.append((value.strip(), type))
-                tokenized = get_token(code, tokenized.end())
-                continue
-
-            elif self.multi_bool == True:
-                if type != 'NEWLINE':
-                    token_arr.append((value.strip(), type))
-                tokenized = get_token2(code, tokenized.end())
-                continue
-
-            elif type == 'SINGLE_LINE_COMMENT':
-                token_arr.append((value.strip(), type))
-                tokenized = get_token2(code, tokenized.end())
-                continue
-
-            elif type == 'MULTI_LINE_COMMENT_START':
-                token_arr.append((value.strip(), type)) 
-                tokenized = get_token(code, tokenized.end()) 
-                self.multi_bool = True
-                continue
-
-            elif type not in ['SPACE', 'NEWLINE']:                    # Ignore spaces and newlines
-                token_arr.append((value.strip(), type))
-
-            tokenized = get_token(code, tokenized.end())
-        for i in token_arr:
-            print (i)
-        return token_arr
-
-    def lexical(self):
-        file_arr = self.file
-        print(f"{'Lexeme':<40} {'Token Type':<40} {'Line':<40}")
-        print("=" * 85)
-
-        all=[]
-        self.lex_line=[]
-        self.multi_bool = False
-        self.error = False
-
-        for line_number, line in enumerate(file_arr, start=1):
-            if self.error != True:
-                self.lex_line.append(line_number)
-                tokens = self.tokenize(line)
-                all.append(tokens)
-                if self.error != True:
-                    for value, type_ in tokens:
-                        print(f"{value:<40} {type_:<40} {line_number:<40}")
-                else:
-                    print("Error: Lexeme Mismatch")
-        
-        for word in file_arr:
-            self.code_text.insert(tk.END,word)
-
-        if(self.error == True):
-            self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
-            return
-        else:
-            for lexeme in all:
-                if(len(lexeme) != 0):
-                    for i in range(len(lexeme)):
-                        self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
-
-        self.syntax_analyze(''.join(file_arr))
-        
-
-    def match(self, type):
-        current = self.tokens[self.pos]
-
-        if current and current[1] == type:
-            self.pos += 1
-            return True
-        else:
-            return False
-        
-    def syntax_analyze(self, code):
-        self.tokens = self.tokenize(code)
-        self.errors = []
-        self.pos = 0
-        self.parse_program()
-
-        if self.errors:
-            print("Syntax Error:")
-
-            for error in self.errors:
-                print(error)
-                self.syntax_text.insert("", "end", values=(error,))
-
-        else:
-            print("Completed successfully!")
-            self.syntax_text.insert("", "end", values=("Completed",))
-
-    def parse_program(self):
-
-        if self.tokens[self.pos][1] == 'SINGLE_LINE_COMMENT':
-            self.pos += 1
-            self.match('COMMENT_BODY')
-        
-        elif self.tokens[self.pos][1] == 'MULTI_LINE_COMMENT_START':
-            self.pos += 1
-            self.match('COMMENT_BODY')
-            if not self.match('MULTI_LINE_COMMENT_END'):
-                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
-
-        if not self.match('PROGRAM_START'):
-            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos]}")
-
-        count = len(self.tokens)
-        
-        while self.pos < count:
-            curr = self.tokens[self.pos]
-            print(curr)
-            if curr[1] == 'PROGRAM_END':
-                self.match('PROGRAM_END')
-                break
-
-            if self.tokens[self.pos][1] == 'SINGLE_LINE_COMMENT':
-                self.pos += 1
-                self.match('COMMENT_BODY')
-        
-            elif self.tokens[self.pos][1] == 'MULTI_LINE_COMMENT_START':
-                self.pos += 1
-                self.match('COMMENT_BODY')
-                if not self.match('MULTI_LINE_COMMENT_END'):
-                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
-
-            elif curr[1] == 'DECLARATION':
-                self.match('DECLARATION')
-                self.declaration()
-
-            elif curr[1] == 'INPUT':
-                self.match('INPUT')
-                self.getinput()
-
-            elif curr[1] == 'PRINT':
-                self.match('PRINT')
-                self.printoutput()
-
-            elif curr[1] == 'CONDITIONAL':
-                self.match('CONDITIONAL')
-                self.conditionals()
-
-            elif curr[1] == 'LOOP':
-                self.match('LOOP')
-                self.loops()
-
-            elif curr[1] == 'ARITHMETIC':
-                self.match('ARITHMETIC')
-                self.arithmetic()
-
-            elif curr[1] == 'ASSIGNMENT':
-                self.match('ASSIGNMENT')
-                self.assignment()
-            
-            elif curr[1] == 'SWITCH':
-                self.match('SWITCH')
-                self.switch()
-
-            elif curr[1] == 'FUNCTION':
-                self.match('FUNCTION')
-                self.function()
-
-            elif curr[1] == 'VARIABLE_START':
-                self.variables_start()
-
-            elif curr[1] == 'VARIABLE_END':
-                self.variables_end()
-            else:
-                self.errors.append(f"Error: Unexpected token {curr[1]}")
-                self.pos += 1
-
-    def variables_start(self):
-        if not self.match('VARIABLE_START'):
-            self.errors.append(f"Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
-
-
-    def variables_end(self):
-        if not self.match('VARIABLE_END'):
-            self.errors.append(f"Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
-
-
-    def declaration(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected {'IDENTIFIER'}, but found {self.tokens[self.pos][1]}")
-
-        if not self.match('DECLARATION_ASSIGNMENT'):
-            pass
-        else:
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER']:
-                self.pos += 1
-            elif self.match('ARITHMETIC'):
-                self.arithmetic()
-            else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER',but found {self.tokens[self.pos][1]}")
-
-    def getinput(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-
-    def printoutput(self):
-        while self.pos < len(self.tokens):
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC']:
-                self.pos += 1
-            else:
-                break
-    
-    def loops(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-            
-        if not self.match('TIL'):
-            self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]}")
-
-    def conditionals(self):
-        if not self.match('CONDITIONAL'):
-            self.errors.append(f"Error: Expected 'CONDITIONAL', but found {self.tokens[self.pos][1]}")
-
-        if not self.match('YA RLY'):
-            self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]}")
-
-        self.expression()
-
-        if not self.match('NO WAI'):
-            self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]}")
-
-        if not self.match('OIC'):
-            self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]}")
-    
-    def arithmetic(self):
-        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-            self.pos += 1
-        else:
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-
-        while self.match('CONNECTOR'):
-            if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-                self.pos += 1
-            else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-
-
-    def assignment(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-        
-        if not self.match('ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'ASSIGNMENT', but found {self.tokens[self.pos][1]}")
-        
-        self.expression()
-
-    def switch(self):
-        if not self.match('SWITCH'):
-            self.errors.append(f"Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
-
-        while self.pos < len(self.tokens):
-            if self.match('OMG'):
-                self.expression()
-            elif self.match('OMGWTF'):
-                self.expression()
-            elif self.match('OIC'):
-                break
-            else:
-                self.errors.append(f"Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
-                self.pos += 1
-
-    def function(self):
-        if not self.match('FUNCTION'):
-            self.errors.append(f"Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-        
-        while self.pos < len(self.tokens):
-            curr = self.tokens[self.pos]
-            if curr[1] == 'FOUND YR':
-                self.match('FOUND YR')
-                self.expression()
-            elif curr[1] == 'IF U SAY SO':
-                self.match('IF U SAY SO')
-                break
-            else:
-                self.parse_program()
-
-    def expression(self):
-        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
-            self.pos += 1
-        else:
-            self.errors.append(f"Error: Expected an expression, but found {self.tokens[self.pos][1]}")
-        
-    def reset(self):
-        self.code_text.delete(1.0, tk.END)
+        self.symbol_table.clear()
         for item in self.lex_text.get_children():
             self.lex_text.delete(item)
         for item in self.syntax_text.get_children():
