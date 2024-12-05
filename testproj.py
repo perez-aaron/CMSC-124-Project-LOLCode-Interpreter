@@ -334,6 +334,14 @@ class LOL:
                 self.match('ARITHMETIC')
                 self.arithmetic()
 
+            elif curr[1] == 'CONCATENATION':
+                self.match('CONCATENATION')
+                self.concatenation()
+
+            elif curr[1] == 'TYPECAST':
+                self.match('TYPECAST')
+                self.typecast()
+
             elif curr[1] == 'ASSIGNMENT':
                 self.match('ASSIGNMENT')
                 self.assignment()
@@ -369,7 +377,7 @@ class LOL:
 
                 self.variables_end()
             else:
-                self.errors.append(f"Error: Unexpected token {curr[1]}")
+                self.errors.append(f"Errordito1: Unexpected token {curr[1]}")
                 self.pos += 1
 
     def variables_start(self):
@@ -394,11 +402,11 @@ class LOL:
             elif self.match('ARITHMETIC'):
                 self.arithmetic()
             else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER',but found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Error: Expected 'IDENTIFIER1',but found {self.tokens[self.pos][1]}")
 
     def getinput(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'IDENTIFIER2', but found {self.tokens[self.pos][1]}")
 
     def printoutput(self):
         while self.pos < len(self.tokens):
@@ -409,7 +417,7 @@ class LOL:
     
     def loops(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'IDENTIFIER3', but found {self.tokens[self.pos][1]}")
             
         if not self.match('TIL'):
             self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]}")
@@ -430,7 +438,7 @@ class LOL:
             self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]}")
     
     def arithmetic(self):
-        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+        if self.tokens[self.pos][1] in ['IDENTIFIER', 'NUMBAR','IDENTIFIER']:
             self.pos += 1
         else:
             self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
@@ -439,15 +447,38 @@ class LOL:
             if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
                 self.pos += 1
             else:
-                self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Error: Expected 'IDENTIFIER4', but found {self.tokens[self.pos][1]}")
 
+    def concatenation(self):
+        if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ASSIGNMENT']:
+            self.pos += 1
+        else:
+            self.errors.append(f"Error: Expected 'IDENTIFIER5', but found {self.tokens[self.pos][1]}")
+
+        while self.match('CONNECTOR'):
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ASSIGNMENT']:
+                self.pos += 1
+            else:
+                self.errors.append(f"Error: Expected 'IDENTIFIER6', but found {self.tokens[self.pos][1]}")
+
+    def typecast(self):
+        if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ASSIGNMENT']:
+            self.pos += 1
+        else:
+            self.errors.append(f"Error: Expected 'IDENTIFIER7', but found {self.tokens[self.pos][1]}")
+
+        while self.match('CONNECTOR'):
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ASSIGNMENT']:
+                self.pos += 1
+            else:
+                self.errors.append(f"Error: Expected 'IDENTIFIER8', but found {self.tokens[self.pos][1]}")
 
     def assignment(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'IDENTIFIER9', but found {self.tokens[self.pos][1]}")
         
         if not self.match('ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'ASSIGNMENT', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'ASSIGNMENT10', but found {self.tokens[self.pos][1]}")
         
         self.expression()
 
