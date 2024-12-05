@@ -100,9 +100,10 @@ class LOL:
 
         style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
 
-        self.lex_text = ttk.Treeview(self.lex_frame, columns = ("Lexemes","Tokens"), show = "headings", style="Treeview")
+        self.lex_text = ttk.Treeview(self.lex_frame, columns = ("Lexemes","Tokens", "Lines"), show = "headings", style="Treeview")
         self.lex_text.heading("Lexemes", text="Lexemes")
         self.lex_text.heading("Tokens", text="Tokens")
+        self.lex_text.heading("Lines", text="Lines")
         self.lex_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.lex_scrollbar = tk.Scrollbar(self.lex_frame, orient=tk.VERTICAL, command=self.lex_text.yview, background="grey")
         self.lex_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -237,11 +238,11 @@ class LOL:
             self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
             return
 
-        for lexeme in all_tokens:
-            if lexeme:
-                for i in range(len(lexeme)):
-                    self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
-
+        for i in range (len(all_tokens)):
+            if all_tokens[i]:
+                for j in range(len(all_tokens[i])):
+                    self.lex_text.insert("", "end", values=(all_tokens[i][j][0], all_tokens[i][j][1], self.lex_line[i]))
+                    
         self.syntax_analyze(code_content)
 
         print("SYMBOL TABLE: \n",self.symbol_table)
@@ -258,6 +259,7 @@ class LOL:
             return True
         else:
             return False   
+
 
     def syntax_analyze(self, code):
         self.tokens = self.tokenize(code)
@@ -374,6 +376,7 @@ class LOL:
             else:
                 self.errors.append(f"Error: Unexpected token {curr[1]}")
                 self.pos += 1
+                break
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
@@ -395,7 +398,7 @@ class LOL:
             return
 
         if not self.match('DECLARATION_ASSIGNMENT'):
-            self.errors.append(f"Error: Expected 'ITZ', but found {self.tokens[self.pos][1]}")
+            self.symbol_table[var_name] = "NOVAL"
             return
         
         var_type = self.tokens[self.pos][1]  
