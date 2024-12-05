@@ -109,7 +109,7 @@ class LOL:
 
         #SYNTAX FRAME
         self.syntax_frame = tk.Frame(self.root, background="#1F1F1F")
-        self.syntax_label = tk.Label(self.syntax_frame, text="SYNTAX",font=bold_font,fg='white',background='#1F1F1F')
+        self.syntax_label = tk.Label(self.syntax_frame, text="INTERPRETER",font=bold_font,fg='white',background='#1F1F1F')
         self.syntax_label.pack(side=tk.TOP)
 
         style = ttk.Style()
@@ -143,13 +143,17 @@ class LOL:
 
 #--------------------------------------------------- LEXICAL ENALYZER --------------------------------------------------------------------------------------------
     def open_file(self):
-        new_file = fd.askopenfilename(title="Open LOLCODE file")
-        with open(new_file, 'r', encoding='UTF-8-sig') as file:
-            file_arr = []
-            for line in file:
-                file_arr.append(line)
-        self.file = file_arr
-        # print("Self File: ", self.file)
+        new_file = fd.askopenfilename(title="Open LOLCODE file", filetypes=[("LOLCODE Files", "*.lol"), ("All Files", "*.*")])
+        if new_file:
+            with open(new_file, 'r', encoding='UTF-8-sig') as file:
+                file_arr = []
+                for line in file:
+                    file_arr.append(line)
+            self.file = file_arr
+    
+            self.code_text.delete(1.0, tk.END)
+            for line in file_arr:
+                self.code_text.insert(tk.END, line)
 
     def tokenize(self,code):
         if self.multi_bool == False:
@@ -200,39 +204,45 @@ class LOL:
         return token_arr
 
     def lexical(self):
-        file_arr = self.file
+        self.lexical_analyze_button.config(state=tk.DISABLED)
+        code_content = self.code_text.get("1.0", tk.END).strip()
+        if not code_content: 
+            messagebox.showwarning("No Code", "Text editor is empty!")
+            return
+
         print(f"{'Lexeme':<40} {'Token Type':<40} {'Line':<40}")
         print("=" * 85)
 
-        all=[]
-        self.lex_line=[]
+        all_tokens = []
+        self.lex_line = []
         self.multi_bool = False
         self.error = False
 
-        for line_number, line in enumerate(file_arr, start=1):
-            if self.error != True:
-                self.lex_line.append(line_number)
-                tokens = self.tokenize(line)
-                all.append(tokens)
-                if self.error != True:
-                    for value, type_ in tokens:
-                        print(f"{value:<40} {type_:<40} {line_number:<40}")
-                else:
-                    print("Error: Lexeme Mismatch")
-        
-        for word in file_arr:
-            self.code_text.insert(tk.END,word)
+        file_arr = code_content.splitlines() 
 
-        if(self.error == True):
+        for line_number, line in enumerate(file_arr, start=1):
+            if self.error:
+                break
+            self.lex_line.append(line_number)
+            tokens = self.tokenize(line)
+            all_tokens.append(tokens)
+            if not self.error:
+                for value, type_ in tokens:
+                    print(f"{value:<40} {type_:<40} {line_number:<40}")
+            else:
+                print("Error: Lexeme Mismatch")
+
+        if self.error:
             self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
             return
-        else:
-            for lexeme in all:
-                if(len(lexeme) != 0):
-                    for i in range(len(lexeme)):
-                        self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
 
-        self.syntax_analyze(''.join(file_arr))
+        for lexeme in all_tokens:
+            if lexeme:
+                for i in range(len(lexeme)):
+                    self.lex_text.insert("", "end", values=(lexeme[i][0], lexeme[i][1]))
+
+        self.syntax_analyze(code_content)
+
         
 #-------------------------------------------------------------------------------------------------------------------------------------------     
 
@@ -273,14 +283,17 @@ class LOL:
             self.pos += 1
             self.match('COMMENT_BODY')
             if not self.match('MULTI_LINE_COMMENT_END'):
-                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
+                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
 
         if not self.match('PROGRAM_START'):
-            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos]}")
+            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos][1]}")
 
         count = len(self.tokens)
         
         while self.pos < count:
+            if self.tokens[-1][1] != 'PROGRAM_END':
+                self.errors.append(f"Error: Expected {'PROGRAM_END'}, found {self.tokens[self.pos][1]}")
+                break
             curr = self.tokens[self.pos]
             print("Current", curr)
             if curr[1] == 'PROGRAM_END':
@@ -295,7 +308,7 @@ class LOL:
                 self.pos += 1
                 self.match('COMMENT_BODY')
                 if not self.match('MULTI_LINE_COMMENT_END'):
-                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos]}")
+                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
 
             elif curr[1] == 'DECLARATION':
                 self.match('DECLARATION')
@@ -335,7 +348,25 @@ class LOL:
             elif curr[1] == 'VARIABLE_START':
                 self.variables_start()
 
-            elif curr[1] == 'VARIABLE_END':
+                while self.tokens[self.pos][1] != 'VARIABLE_END':
+
+                    if self.tokens[self.pos][1] == 'DECLARATION':
+                        self.match('DECLARATION')
+                        self.declaration()
+
+                    elif self.tokens[self.pos][1] == 'SINGLE_LINE_COMMENT':
+                        self.pos += 1
+                        self.match('COMMENT_BODY')
+                
+                    elif self.tokens[self.pos][1] == 'MULTI_LINE_COMMENT_START':
+                        self.pos += 1
+                        self.match('COMMENT_BODY')
+                        if not self.match('MULTI_LINE_COMMENT_END'):
+                            self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
+                    else:
+                        self.pos += 1
+                        print("ERRORRRRRRR")
+
                 self.variables_end()
             else:
                 self.errors.append(f"Error: Unexpected token {curr[1]}")
@@ -473,7 +504,8 @@ class LOL:
             self.errors.append(f"Error: Expected an expression, but found {self.tokens[self.pos][1]}")
         
     def reset(self):
-        self.code_text.delete(1.0, tk.END)
+        # self.code_text.delete(1.0, tk.END)
+        self.lexical_analyze_button.config(state=tk.NORMAL)
         for item in self.lex_text.get_children():
             self.lex_text.delete(item)
         for item in self.syntax_text.get_children():
