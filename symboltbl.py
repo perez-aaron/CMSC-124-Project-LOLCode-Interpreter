@@ -60,35 +60,45 @@ class LOL:
         self.root.geometry("1500x700")
         self.root.title("HELLO, HAI, KTHXBYE INTERPRETER")
         self.create_widgets()
-        self.symbol_table = {}  
+        self.symbol_table = []  
 
     def create_widgets(self):
         bold_font = font.Font(family="Helvetica", size=12, weight="bold")
 
-        #TITLE FRAME
+        # TITLE FRAME
         self.title_frame = tk.Frame(self.root, background="#181818")
-        self.title_label = tk.Label(self.title_frame, text="HELLO, HAI, KTHXBYE INTERPRETER",font=bold_font,background='#181818',fg='white')
+        self.title_label = tk.Label(self.title_frame, text="HELLO, HAI, KTHXBYE INTERPRETER", font=bold_font, background='#181818', fg='white')
         self.title_label.pack(expand=True)
 
-        #FILE FRAME
+        # FILE FRAME
         self.file_frame = tk.Frame(self.root, background="#181818")
-        self.file_button = tk.Button(self.file_frame, text = "FILE", background = '#1F1F1F', fg = 'white', font=bold_font, width=10, height=2, command=self.open_file)
+        self.file_button = tk.Button(self.file_frame, text="FILE", background='#1F1F1F', fg='white', font=bold_font, width=10, height=2, command=self.open_file)
         self.file_button.pack(side=tk.TOP, padx=10, pady=10)
-        self.lexical_analyze_button = tk.Button(self.file_frame, text = "ANALYZE", background = '#1F1F1F', fg = 'white', font=bold_font, width=10, height=2, command=self.lexical)
-        self.lexical_analyze_button.pack(side=tk.TOP,padx=10, pady=10)
-        self.reset_button = tk.Button(self.file_frame, text = "RESET", background = '#1F1F1F', fg = 'white', font=bold_font, width=10, height=2, command=self.reset)
-        self.reset_button.pack(side=tk.TOP,padx=10, pady=10)
+        self.lexical_analyze_button = tk.Button(self.file_frame, text="ANALYZE", background='#1F1F1F', fg='white', font=bold_font, width=10, height=2, command=self.lexical)
+        self.lexical_analyze_button.pack(side=tk.TOP, padx=10, pady=10)
+        self.reset_button = tk.Button(self.file_frame, text="RESET", background='#1F1F1F', fg='white', font=bold_font, width=10, height=2, command=self.reset)
+        self.reset_button.pack(side=tk.TOP, padx=10, pady=10)
 
-        #CODEBASE FRAME
+            # CODEBASE FRAME
         self.code_frame = tk.Frame(self.root, background="#1F1F1F")
-        self.code_label = tk.Label(self.code_frame, text="CODE",font=bold_font,fg='white',background='#1F1F1F')
+        self.code_label = tk.Label(self.code_frame, text="CODE", font=bold_font, fg='white', background='#1F1F1F')
         self.code_label.pack(side=tk.TOP)
+
+        self.line_numbers = tk.Text(self.code_frame, width=4, wrap=tk.NONE, background='#292929', fg='grey', state='disabled')
+        self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
 
         self.code_text = tk.Text(self.code_frame, wrap=tk.WORD, background='#292929', fg='white')
         self.code_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.code_scrollbar = tk.Scrollbar(self.code_frame, command=self.code_text.yview,background="grey")
+
+        self.code_scrollbar = tk.Scrollbar(self.code_frame, command=self.sync_scroll, background="grey")
         self.code_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
         self.code_text.config(yscrollcommand=self.code_scrollbar.set)
+        self.code_text.bind('<KeyRelease>', self.update_line_numbers)
+        # self.code_text.bind('<MouseWheel>', self.sync_scroll)
+
+        self.code_text.config(yscrollcommand=self.sync_code_scroll)
+        self.line_numbers.config(yscrollcommand=self.sync_line_scroll)
 
         #LEXEMES FRAME
         self.lex_frame = tk.Frame(self.root, background="#1F1F1F")
@@ -142,6 +152,28 @@ class LOL:
         self.lex_frame.grid(row=1,column=2,sticky='nswe')
         self.syntax_frame.grid(row=2,column=2,sticky='nswe')
 
+    def sync_scroll(self, *args):
+        self.code_text.yview(*args)
+        self.line_numbers.yview(*args)
+    def sync_code_scroll(self, *args):
+        self.line_numbers.yview_moveto(args[0])
+        self.code_scrollbar.set(*args)
+
+    def sync_line_scroll(self, *args):
+        self.code_text.yview_moveto(args[0])
+        self.code_scrollbar.set(*args)
+
+    def update_line_numbers(self, event=None):
+        self.line_numbers.config(state='normal')
+        self.line_numbers.delete(1.0, tk.END)
+
+        line_count = self.code_text.index('end-1c').split('.')[0]
+        lines = "\n".join(str(i) for i in range(1, int(line_count) + 1))
+        self.line_numbers.insert(1.0, lines)
+
+        self.line_numbers.config(state='disabled')
+
+
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #--------------------------------------------------- LEXICAL ENALYZER --------------------------------------------------------------------------------------------
@@ -157,6 +189,8 @@ class LOL:
             self.code_text.delete(1.0, tk.END)
             for line in file_arr:
                 self.code_text.insert(tk.END, line)
+            
+            self.update_line_numbers()
 
     def tokenize(self,code, line):
         if self.multi_bool == False:
@@ -252,7 +286,7 @@ class LOL:
         
 #-------------------------------------------------------------------------------------------------------------------------------------------     
 
-#------------------------------------------------- SYNTAX ANALYZER -------------------------------------------------------------------------
+#------------------------------------------------- SYNTAX AND SEMANTIC ANALYZER-------------------------------------------------------------------------
     def match(self, type):
         current = self.tokens[self.pos]
 
@@ -293,19 +327,19 @@ class LOL:
             self.pos += 1
             self.match('COMMENT_BODY')
             if not self.match('MULTI_LINE_COMMENT_END'):
-                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
         if not self.match('PROGRAM_START'):
-            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected {'PROGRAM_START'}, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
         count = len(self.tokens)
         
         while self.pos < count:
             if self.tokens[-1][1] != 'PROGRAM_END':
-                self.errors.append(f"Error: Expected {'PROGRAM_END'}, found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Error: Expected {'PROGRAM_END'}, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
                 break
             curr = self.tokens[self.pos]
-            print("Current", curr)
+
             if curr[1] == 'PROGRAM_END':
                 self.match('PROGRAM_END')
                 break
@@ -318,7 +352,7 @@ class LOL:
                 self.pos += 1
                 self.match('COMMENT_BODY')
                 if not self.match('MULTI_LINE_COMMENT_END'):
-                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
+                    self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
             elif curr[1] == 'DECLARATION':
                 self.match('DECLARATION')
@@ -344,9 +378,19 @@ class LOL:
                 self.match('ARITHMETIC')
                 self.arithmetic()
 
-            elif curr[1] == 'ASSIGNMENT':
-                self.match('ASSIGNMENT')
-                self.assignment()
+            elif curr[1] == 'IDENTIFIER':
+                self.match('IDENTIFIER')
+                if self.match('ASSIGNMENT'):
+                    self.pos -= 2
+                    self.assignment()
+                elif self.match('TYPECAST'):
+                    self.pos -= 2
+                    self.typecast()
+                else:
+                    self.pos += 1
+            
+            elif curr[1] == 'COMPARISON':
+                self.comparison()
             
             elif curr[1] == 'SWITCH':
                 self.match('SWITCH')
@@ -354,6 +398,14 @@ class LOL:
 
             elif curr[1] == 'FUNCTION':
                 self.function()
+            
+            elif curr[1] == 'CONCATENATION':
+                self.match('CONCATENATION')
+                self.expression()
+                if not self.match('AN'):
+                    self.errors.append(f"Syntax Error: Expected {'CONNECTOR'}, found {self.tokens[self.pos-1][1]} at line {self.tokens[self.pos-1][2]}")
+                    return
+                self.expression()
 
             elif curr[1] == 'VARIABLE_START':
                 self.variables_start()
@@ -372,43 +424,60 @@ class LOL:
                         self.pos += 1
                         self.match('COMMENT_BODY')
                         if not self.match('MULTI_LINE_COMMENT_END'):
-                            self.errors.append(f"Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]}")
+                            self.errors.append(f"Syntax Error: Expected {'MULTI_LINE_COMMENT_END'}, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                            return
                     else:
                         self.pos += 1
-                        print("ERRORRRRRRR")
+                    
+                    if len(self.tokens) <= self.pos:
+                        self.errors.append(f"Syntax Error: Expected 'VARIABLE_END', found {self.tokens[self.pos-1][1]} at line {self.tokens[self.pos-1][2]}")
+                        return
 
                 self.variables_end()
+
             else:
-                self.errors.append(f"Syntax Error: Unexpected token {curr[1]}")
+                self.errors.append(f"Syntax Error: Unexpected token {curr[1]} at line {self.tokens[self.pos][2]}")
                 self.pos += 1
                 break
+    def comparison(self):
+        if not self.match('COMPARISON'):
+            self.errors.append(f"Syntax Error: Expected {'COMPARISON'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
+        self.expression()
+        self.match('AN')
+        self.expression()
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
-            self.errors.append(f"Syntax Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]}")
-
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_START'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
     def variables_end(self):
         if not self.match('VARIABLE_END'):
-            self.errors.append(f"Syntax Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]}")
-
+            self.errors.append(f"Syntax Error: Expected {'VARIABLE_END'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
     def declaration(self):
         if self.tokens[self.pos][1] == ('IDENTIFIER'):
             var_name = self.tokens[self.pos][0] 
-            self.match('IDENTIFIER')
+            self.match('IDENTIFIER')    
         else:
-            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
 
         if not self.match('DECLARATION_ASSIGNMENT'):
-            self.symbol_table[var_name] = 'NOVAL'
+            self.symbol_table.append(('NOVAL', var_name, None))
             return
         
         var_type = self.tokens[self.pos][1]  
+        var_value = None
+
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
+            var_value = self.tokens[self.pos][0]
+            self.pos += 1
         
 
-        self.symbol_table[var_name] = var_type
+        self.symbol_table.append((var_type, var_name, var_value))
         print(f"Declared {var_name} of type {var_type}")
 
 
@@ -417,92 +486,107 @@ class LOL:
 
     def getinput(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
     def printoutput(self):
         while self.pos < len(self.tokens):
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC']:
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC', 'CONCATENATION', 'COMPARISON'] and self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
                 self.pos += 1
             else:
                 break
     
     def loops(self):
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
-            
+            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
+
         if not self.match('TIL'):
-            self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
     def conditionals(self):
         if not self.match('CONDITIONAL'):
-            self.errors.append(f"Error: Expected 'CONDITIONAL', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'CONDITIONAL', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
         if not self.match('YA RLY'):
-            self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
         self.expression()
 
         if not self.match('NO WAI'):
-            self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
         if not self.match('OIC'):
-            self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]}")
-    
+            self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
+
     def arithmetic(self):
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
             if self.tokens[self.pos][0] not in self.symbol_table:
-                self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
+                self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
             self.pos += 1
         else:
-            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
         while self.match('CONNECTOR'):
             if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
                 if self.tokens[self.pos][0] not in self.symbol_table:
-                    self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared")
+                    self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
                 self.pos += 1
             else:
-                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
 
-    def assignment(self):
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]}")
+    def assignment(self):    
+        var_name = self.tokens[self.pos][0] 
+        variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+        print(f"VARRRRRRIIAAABBKEELELELE {variable}")
+
+        if not variable:
+            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
             return
         
-        var_name = self.tokens[self.pos][0] 
-        if var_name not in self.symbol_table:
-            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared")
-            return
-
-        self.pos += 1  
+        self.pos += 1
 
         if not self.match('ASSIGNMENT'):
-            self.errors.append(f"Syntax Error: Expected 'R', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'R', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            print(f"Found {self.tokens[self.pos][0]}")
             return
 
-        self.expression()
+        new_value = self.tokens[self.pos][2]
+        self.pos += 1
+
+        self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
+                            for var_type, name, value in self.symbol_table]
 
     def switch(self):
         if not self.match('SWITCH'):
-            self.errors.append(f"Syntax Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected 'SWITCH', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
 
         while self.pos < len(self.tokens):
-            if self.match('OMG'):
+            if self.tokens[self.pos][0]('OMG'):
+                self.match("OMG")
                 self.expression()
-            elif self.match('OMGWTF'):
+            elif self.tokens[self.pos][0]('OMGWTF'):
+                self.match("OMGWTF")
                 self.expression()
-            elif self.match('OIC'):
+            elif self.tokens[self.pos][0]('OIC'):
+                self.match("OIC")
                 break
             else:
-                self.errors.append(f"Syntax Error: Unexpected token in SWITCH {self.tokens[self.pos][1]}")
+                self.errors.append(f"Syntax Error: Unexpected token in SWITCH {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
                 self.pos += 1
 
     def function(self):
         if not self.tokens[self.pos][0] == 'HOW IZ I':
             if not self.tokens[self.pos][0] == 'IF U SAY SO':
                 if not self.tokens[self.pos][0] == 'I IZ':
-                    self.errors.append(f"Syntax Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]}")        
+                    self.errors.append(f"Syntax Error: Expected 'FUNCTION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")        
         while self.pos < len(self.tokens):
             curr = self.tokens[self.pos]
             if curr[0] == 'FOUND YR':
@@ -530,20 +614,41 @@ class LOL:
                 return False
 
     def expression(self):
-        """ Handle expressions, evaluating or checking types """
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
             if self.tokens[self.pos][1] == 'IDENTIFIER':
                 var_name = self.tokens[self.pos][0]
-                if var_name not in self.symbol_table:
-                    self.errors.append(f"Error: Variable '{var_name}' is not declared")
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
             self.pos += 1
         else:
-            self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]}")
+            self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
     
+    def typecast(self):
+        var_name = self.tokens[self.pos][0] 
+        variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+
+        if not variable:
+            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+            return
+        
+        self.pos += 1
+
+        if not self.match('IS NOW A'):
+            self.errors.append(f"Syntax Error: Expected 'TYPECAST', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return
+
+        new_type = self.tokens[self.pos][0]
+        self.pos += 1
+
+        self.symbol_table = [(new_type, var_name, value) if name == var_name else (var_type, name, value)
+                            for var_type, name, value in self.symbol_table]
+        
     def reset(self):
         # self.code_text.delete(1.0, tk.END)
         self.lexical_analyze_button.config(state=tk.NORMAL)
         self.symbol_table.clear()
+        self.tokens.clear()
         for item in self.lex_text.get_children():
             self.lex_text.delete(item)
         for item in self.syntax_text.get_children():
