@@ -380,12 +380,16 @@ class LOL:
 
             elif curr[1] == 'IDENTIFIER':
                 self.match('IDENTIFIER')
+                print(f"ITO YUNG POSS BAGOOOOO YESS: {self.pos}{self.tokens[self.pos]}")
                 if self.match('ASSIGNMENT'):
                     self.pos -= 2
                     self.assignment()
+                    self.pos += 1
+                    print(f"ITO YUNG POSS AFTTTTEERRRRR YESS: {self.pos} {self.tokens[self.pos]}")
                 elif self.match('TYPECAST'):
                     self.pos -= 2
                     self.typecast()
+                    self.pos += 1
                 else:
                     self.pos += 1
             
@@ -466,7 +470,7 @@ class LOL:
             return
 
         if not self.match('DECLARATION_ASSIGNMENT'):
-            self.symbol_table.append(('NOVAL', var_name, None))
+            self.symbol_table.append(('NOOB', var_name, None))
             return
         
         var_type = self.tokens[self.pos][1]  
@@ -548,9 +552,11 @@ class LOL:
 
         if not variable:
             self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+            self.pos += 2
             return
         
         self.pos += 1
+        print("NAABOT BA DITO")
 
         if not self.match('ASSIGNMENT'):
             self.errors.append(f"Syntax Error: Expected 'R', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
@@ -558,7 +564,7 @@ class LOL:
             return
 
         new_value = self.tokens[self.pos][2]
-        self.pos += 1
+        
 
         self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
                             for var_type, name, value in self.symbol_table]
@@ -630,6 +636,7 @@ class LOL:
 
         if not variable:
             self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+            self.pos += 2
             return
         
         self.pos += 1
@@ -639,7 +646,7 @@ class LOL:
             return
 
         new_type = self.tokens[self.pos][0]
-        self.pos += 1
+       
 
         self.symbol_table = [(new_type, var_name, value) if name == var_name else (var_type, name, value)
                             for var_type, name, value in self.symbol_table]
