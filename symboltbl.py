@@ -529,8 +529,18 @@ class LOL:
             else:
                 man = int(val1) == int(val2)
                 if man == True:
+                    for var in self.symbol_table:
+                        if(var[1] == 'IT'):
+                            remove = (var[0],var[1],var[2])
+                            self.symbol_table = [tup for tup in self.symbol_table if tup != remove]
+                    self.symbol_table.append(('TROOF','IT','WIN'))
                     return 'WIN'
                 else:
+                    for var in self.symbol_table:
+                        if(var[1] == 'IT'):
+                            remove = (var[0],var[1],var[2])
+                            self.symbol_table = [tup for tup in self.symbol_table if tup != remove]
+                    self.symbol_table.append(('TROOF','IT','FAIL'))
                     return 'FAIL'
         else:
             if type(val1) == float:
@@ -548,8 +558,18 @@ class LOL:
             else:
                 man = int(val1) != int(val2)
                 if man == True:
+                    for var in self.symbol_table:
+                        if(var[1] == 'IT'):
+                            remove = (var[0],var[1],var[2])
+                            self.symbol_table = [tup for tup in self.symbol_table if tup != remove]
+                    self.symbol_table.append(('TROOF','IT','WIN'))
                     return 'WIN'
                 else:
+                    for var in self.symbol_table:
+                        if(var[1] == 'IT'):
+                            remove = (var[0],var[1],var[2])
+                            self.symbol_table = [tup for tup in self.symbol_table if tup != remove]
+                    self.symbol_table.append(('TROOF','IT','FAIL'))
                     return 'FAIL'
 
     def variables_start(self):
@@ -961,55 +981,69 @@ class LOL:
         
     def conditionals(self):
         if not self.match('YA RLY'):
-            self.errors.append(f"Syntax Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            self.errors.append(f"Syntax Error: Expected asdas'YA RLY', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
+        self.pos-=1
+        for var in self.symbol_table:
+            if var[1] == 'IT':
+                if var[2] == 'WIN':
+                    print("NAGEXECUTE IF")
+                    while not self.tokens[self.pos][0] in  ['OIC', 'NO WAI']:
+                        if self.tokens[self.pos][1] == 'PRINT':
+                            self.match('PRINT')
+                            val = self.printoutput()
+                            if val == 'err':
+                                return
 
-        while not self.tokens[self.pos][0] in  ['OIC', 'NO WAI']:
-            if self.tokens[self.pos][1] == 'PRINT':
-                self.match('PRINT')
-                val = self.printoutput()
-                if val == 'err':
+                        elif self.tokens[self.pos][1] == 'INPUT':
+                            self.match('INPUT')
+                            val = self.getinput()
+                            if val == 'err':
+                                return
+                        else:
+                            self.pos += 1
+
+                    while(self.tokens[self.pos][0] != 'OIC'):
+                        self.pos +=1
+                    self.pos +=1
+                    print("ETO SAYO",self.tokens[self.pos])
                     return
-
-            elif self.tokens[self.pos][1] == 'INPUT':
-                self.match('INPUT')
-                val = self.getinput()
-                if val == 'err':
-                    return
-            else:
-                self.pos += 1
-
-        if self.tokens[self.pos][0] == 'NO WAI':
-            self.match('NO WAI')
-
-            while self.tokens[self.pos][0] != 'OIC':
-                if self.tokens[self.pos][1] == 'PRINT':
-                    self.match('PRINT')
-                    val = self.printoutput()
-                    if val == 'err':
-                        return
-                elif self.tokens[self.pos][1] == 'INPUT':
-                    self.match('INPUT')
-                    val = self.getinput()
-                    if val == 'err':
-                        return
                 else:
-                    self.errors.append(f"Syntax Error: Expected 'ERRRORR', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-                    return
-            
-            if self.tokens[self.pos][0] == 'OIC':
-                self.match('OIC')
-                return
-            else:
-                self.errors.append(f"Syntax Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-                return
+                    print("NAGEXECUTE ELSE")
+                    while(self.pos < len(self.tokens) and self.tokens[self.pos][0] != 'NO WAI'):
+                        self.pos +=1
+                    if self.pos < len(self.tokens):
+                        if self.tokens[self.pos][0] == 'NO WAI':
+                            self.match('NO WAI')
+                            while self.tokens[self.pos][0] != 'OIC':
+                                if self.tokens[self.pos][1] == 'PRINT':
+                                    self.match('PRINT')
+                                    val = self.printoutput()
+                                    if val == 'err':
+                                        return
+                                elif self.tokens[self.pos][1] == 'INPUT':
+                                    self.match('INPUT')
+                                    val = self.getinput()
+                                    if val == 'err':
+                                        return
+                                else:
+                                    self.errors.append(f"Syntax Error: Expected 'ERRRORR', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                                    return
+                            
+                            if self.tokens[self.pos][0] == 'OIC':
+                                self.match('OIC')
+                                return
+                            else:
+                                self.errors.append(f"Syntax Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                                return
 
-        elif self.tokens[self.pos][0] == 'OIC':
-            self.match('OIC')
-            return
-        else:
-            self.errors.append(f"Syntax Error: Expected 'NO WAI or OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            return
+                        elif self.tokens[self.pos][0] == 'OIC':
+                            self.match('OIC')
+                            return
+                        else:
+                            self.errors.append(f"Syntax Error: Expected 'NO WAI or OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                            return
+            
 
     def sum_of(self,a,b):
         return a+b
