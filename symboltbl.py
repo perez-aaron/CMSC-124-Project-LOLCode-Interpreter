@@ -623,6 +623,7 @@ class LOL:
         #EXECUTION
         self.pos+=1
         var_name = self.tokens[self.pos-1][0]
+        var_type = self.tokens[self.pos-1][1]
 
         #Check if the variable is already in the symbol table
         for var in self.symbol_table:
@@ -639,7 +640,7 @@ class LOL:
         text = self.user_input_var.get()
 
         #Replace with user input
-        self.symbol_table.append(('IDENTIFIER', var_name, text))
+        self.symbol_table.append((var_type, var_name, text))
 
     def printoutput(self):
         to_print = ""
@@ -1314,23 +1315,99 @@ class LOL:
             return
 
         new_type = self.tokens[self.pos][0]
-
-        if new_type == 'NUMBR':
-            self.symbol_table = [(new_type, var_name, int(value)) if name == var_name else (var_type, name, value)
-                                for var_type, name, value in self.symbol_table]
-        elif new_type == 'NUMBAR':
-            self.symbol_table = [(new_type, var_name, float(value)) if name == var_name else (var_type, name, value)
-                                for var_type, name, value in self.symbol_table]
-        elif new_type == 'YARN':
-            self.symbol_table = [(new_type, var_name, str(value)) if name == var_name else (var_type, name, value)
-                                for var_type, name, value in self.symbol_table]
-        elif new_type == 'TROOF':
-            if variable[2] != None:
-                self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+        
+        if variable[1] == 'NUMBR':
+            if new_type == 'NUMBR':
+                self.symbol_table = [(new_type, var_name, int(value)) if name == var_name else (var_type, name, value)
                                     for var_type, name, value in self.symbol_table]
-            else:
+            elif new_type == 'NUMBAR':
+                self.symbol_table = [(new_type, var_name, float(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'YARN':
+                self.symbol_table = [(new_type, var_name, str(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'TROOF':
+                if variable[2] != None and variable[2] != 0 and variable[2] != 0.0:
+                    self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+        elif variable[1] == 'NUMBAR':
+            if new_type == 'NUMBR':
+                self.symbol_table = [(new_type, var_name, int(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'NUMBAR':
+                self.symbol_table = [(new_type, var_name, float(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'YARN':
+                self.symbol_table = [(new_type, var_name, "{:.2f}".format(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'TROOF':
+                if variable[2] != None and variable[2] != 0 and variable[2] != 0.0:
+                    self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+        
+        elif variable[1] == 'TROOF':
+            if new_type == 'NUMBR':
+                if variable[2] == 'WIN':
+                    self.symbol_table = [(new_type, var_name, int(1)) if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, int(0)) if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+            elif new_type == 'NUMBAR':
+                if variable[2] == 'WIN':
+                    self.symbol_table = [(new_type, var_name, float(1)) if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, float(0)) if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+            elif new_type == 'YARN':
+                self.symbol_table = [(new_type, var_name, str(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'TROOF':
+                if variable[2] != None and variable[2] != 0 and variable[2] != 0.0:
+                    self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+        elif variable[1] == 'YARN':
+            if new_type == 'NUMBR':
+                self.symbol_table = [(new_type, var_name, int(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'NUMBAR':
+                self.symbol_table = [(new_type, var_name, float(value)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'YARN':
+                self.symbol_table = [(new_type, var_name, value) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'TROOF':
+                if variable[2] != None and variable[2] != 0 and variable[2] != 0.0:
+                    self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+                else:
+                    self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
+                                        for var_type, name, value in self.symbol_table]
+        else:
+            if new_type == 'NUMBR':
+                self.symbol_table = [(new_type, var_name, int(0)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'NUMBAR':
+                self.symbol_table = [(new_type, var_name, float(0)) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'YARN':
+                self.symbol_table = [(new_type, var_name, "") if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            elif new_type == 'TROOF':
                 self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
                                     for var_type, name, value in self.symbol_table]
+
+            
     def reset(self):
         self.lexical_analyze_button.config(state=tk.NORMAL)
         self.symbol_table.clear()
