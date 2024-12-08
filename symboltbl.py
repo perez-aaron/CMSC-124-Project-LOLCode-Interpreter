@@ -756,54 +756,208 @@ class LOL:
   
     def loops(self):
         loopname = self.tokens[self.pos][0]
+        op1 = ''
+        op = ''
+        bool1 = False
+        var_name = ''
 
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            return
+            self.errors.append(f"Not a valid identifier at line {self.tokens[self.pos][2]}")
+            return None
+            
 
         while self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
-            print("THISISSS DOOOEEEE", self.tokens[self.pos])
             if self.tokens[self.pos][0] == 'UPPIN':
                 self.match('UPPIN')
                 self.match('YR')
-                self.match('EXPRESSION')
+
+                op1 = 'UPPIN'
+                if self.tokens[self.pos][1] == 'IDENTIFIER':
+                    var_name = self.tokens[self.pos][0]
+                    variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+            
+                    if not variable:
+                        self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                        return None
+            
             elif self.tokens[self.pos][0] == 'NERFIN':
                 self.match('NERFIN')
                 self.match('YR')
-                self.match('EXPRESSION')
+                
+                op1 = 'NERFIN'
+
+                if self.tokens[self.pos][1] == 'IDENTIFIER':
+                    var_name = self.tokens[self.pos][0]
+                    variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+            
+                    if not variable:
+                        self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                        return None
+                    
             elif self.tokens[self.pos][0] in ['TIL', 'WILE']:
+                op = self.tokens[self.pos][0]
                 self.match('LOOP')
+                break
+            else:
+                self.pos += 1
+
+        if op == 'TIL':
+            ekko = 4
+            cnt = 0
+            while bool1 != True:
+
+                if self.tokens[self.pos][0] == 'IM OUTTA YR':
+                    self.pos = ekko
+
+                    if op1 == 'UPPIN':
+                        self.symbol_table = [(var_type, var_name, value + 1) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+                    else:
+                        self.symbol_table = [(var_type, var_name, value - 1) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+
                 if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER', 'YARN', 'TROOF']:
-                    self.expression()
+                    ekko = self.pos
+                    bool1 = self.expression()
+                    if bool1 == 'WIN':
+                        bool1 = True
+                    elif bool1 == 'FAIL':
+                        bool1 = False
+                    elif bool1 != None:
+                        bool1 = True
+                    else:
+                        bool1 = False
+                    
+                    
+
                 elif self.tokens[self.pos][1] == 'COMPARISON':
-                    self.comparison()
+                    ekko = self.pos
+                    bool1 = self.comparison()
+                    if bool1 == 'WIN':
+                        bool1 = True
+                        if cnt == 0:
+                            break
+                    else:
+                        False
+                    
+
                 else:
                     self.errors.append(f"Syntax Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
                     return
-            else:
-                self.pos += 1
-        
-        while self.tokens[self.pos][0] != 'IM OUTTA YR':
-            if self.tokens[self.pos][1] == 'PRINT':
-                self.match('PRINT')
-                val = self.printoutput()
-                if val == 'err':
-                    return
+                
 
-            elif self.tokens[self.pos][1] == 'INPUT':
-                self.match('INPUT')
-                val = self.getinput()
-                if val == 'err':
-                    return 
-            else:
+                if self.tokens[self.pos][1] == 'PRINT':
+                    self.match('PRINT')
+                    val = self.printoutput()
+                    if val == 'err':
+                        return
+                    
+
+                elif self.tokens[self.pos][1] == 'INPUT':
+                    self.match('INPUT')
+                    val = self.getinput()
+                    if val == 'err':
+                        return
+                    
+
+                else:
+                    self.pos += 1
+                
+                cnt += 1
+                
+            while self.tokens[self.pos][0] != 'IM OUTTA YR':
                 self.pos += 1
-        
-        if self.tokens[self.pos][0] == 'IM OUTTA YR':
-            self.match("LOOP")
-            if loopname == self.tokens[self.pos][0]:
-                self.match('IDENTIFIER')
-        else:
-            return
+                
+            if self.tokens[self.pos][0] == 'IM OUTTA YR':
+                self.match("LOOP")
+                if loopname == self.tokens[self.pos][0]:
+                    self.match('IDENTIFIER')
+            else:
+                return
+        elif op == 'WILE':
+            ekko = 4
+            cnt = 0
+
+            if self.tokens[self.pos][1] == 'COMPARISON':
+                    ekko = self.pos
+                    bool1 = self.comparison()
+                    if bool1 == 'WIN':
+                        bool1 = True
+                    else:
+                        bool1 = False
+            
+            self.pos = ekko
+
+            while bool1 == True:
+
+                if self.tokens[self.pos][0] == 'IM OUTTA YR':
+                    self.pos = ekko
+
+                    if op1 == 'UPPIN':
+                        self.symbol_table = [(var_type, var_name, value + 1) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+                    else:
+                        self.symbol_table = [(var_type, var_name, value - 1) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+
+                if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER', 'YARN', 'TROOF']:
+                    ekko = self.pos
+                    bool1 = self.expression()
+                    if bool1 == 'WIN':
+                        bool1 = True
+                    elif bool1 == 'FAIL':
+                        bool1 = False
+                    elif bool1 != None:
+                        bool1 = True
+                    else:
+                        bool1 = False
+                    
+                    
+
+                elif self.tokens[self.pos][1] == 'COMPARISON':
+                    ekko = self.pos
+                    bool1 = self.comparison()
+                    if bool1 == 'WIN':
+                        bool1 = True
+                    else:
+                        bool1 = False
+                        if cnt == 0:
+                            break
+                    
+
+                else:
+                    self.errors.append(f"Syntax Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                    return
+                
+
+                if self.tokens[self.pos][1] == 'PRINT':
+                    self.match('PRINT')
+                    val = self.printoutput()
+                    if val == 'err':
+                        return
+                    
+
+                elif self.tokens[self.pos][1] == 'INPUT':
+                    self.match('INPUT')
+                    val = self.getinput()
+                    if val == 'err':
+                        return
+                    
+
+                else:
+                    self.pos += 1
+                
+                cnt += 1
+                
+            while self.tokens[self.pos][0] != 'IM OUTTA YR':
+                self.pos += 1
+                
+            if self.tokens[self.pos][0] == 'IM OUTTA YR':
+                self.match("LOOP")
+                if loopname == self.tokens[self.pos][0]:
+                    self.match('IDENTIFIER')
+            else:
+                return
         
     def conditionals(self):
         if not self.match('YA RLY'):
@@ -985,9 +1139,16 @@ class LOL:
                     self.symbol_table = [(variable[1], var_name, variable[2]) if name == var_name else (var_type, name, value)
                                 for var_type, name, value in self.symbol_table]
                 else:
-                    new_value = int(self.tokens[self.pos][0])
+                    if self.tokens[self.pos][1] == 'NUMBR':
+                        new_value = int(self.tokens[self.pos][0])
 
-                    self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
+                        self.symbol_table = [('NUMBR', var_name, new_value) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+                        
+                    elif self.tokens[self.pos][1] == 'NUMBAR':
+                        new_value = float(self.tokens[self.pos][0])
+
+                        self.symbol_table = [('NUMBAR', var_name, new_value) if name == var_name else (var_type, name, value)
                                     for var_type, name, value in self.symbol_table]
                 
                 self.pos += 1
