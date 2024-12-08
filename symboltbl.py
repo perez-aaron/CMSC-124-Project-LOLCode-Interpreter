@@ -411,7 +411,6 @@ class LOL:
                     self.match('ASSIGNMENT')
                     self.pos -= 2
                     self.assignment()
-                    self.pos += 1
                 elif self.tokens[self.pos][1] == 'TYPECAST':
                     self.match('TYPECAST')
                     self.pos -= 2
@@ -482,6 +481,7 @@ class LOL:
                 self.errors.append(f"Syntax Error: Unexpected token {curr[1]} at line {self.tokens[self.pos][2]}")
                 self.pos += 1
                 break
+
     def comparison(self):
         if not self.match('COMPARISON'):
             self.errors.append(f"Syntax Error: Expected {'COMPARISON'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
@@ -693,7 +693,6 @@ class LOL:
                 self.pos += 1
         
         while self.tokens[self.pos][0] != 'IM OUTTA YR':
-            print("BUTTTTTTT DOOOEEEE", self.tokens[self.pos])
             if self.tokens[self.pos][1] == 'PRINT':
                 self.match('PRINT')
                 val = self.printoutput()
@@ -829,7 +828,18 @@ class LOL:
                 cleaned_string = token_value.strip('"')
                 operations.append(float(cleaned_string))
             elif token_type == 'CONNECTOR':
-                pass
+                if operations[-1] in ['SUM OF', 'DIFF OF','PRODUKT OF','QUOSHUNT OF','BIGGR OF','SMALLR OF','MOD OF'] or operations[-2] in ['SUM OF', 'DIFF OF','PRODUKT OF','QUOSHUNT OF','BIGGR OF','SMALLR OF','MOD OF']:
+                    pass
+                else:
+                    if len(operations) > 3:
+                        if operations[-3] in ['SUM OF', 'DIFF OF','PRODUKT OF','QUOSHUNT OF','BIGGR OF','SMALLR OF','MOD OF'] and operations[-4] in ['SUM OF', 'DIFF OF','PRODUKT OF','QUOSHUNT OF','BIGGR OF','SMALLR OF','MOD OF']:
+                            pass
+                        else:
+                            break
+                    else:
+                        break
+            else:
+                break
             self.pos += 1
 
         for element in reversed(operations):
@@ -869,19 +879,18 @@ class LOL:
                 self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
                                 for var_type, name, value in self.symbol_table]
                 
+                self.pos += 1
+                
             elif self.tokens[self.pos][1] == 'TYPECAST':
                 self.match('TYPECAST')
                 self.typecast()
+                self.pos += 1
 
             elif self.tokens[self.pos][1] == 'CONCATENATION':
-                self.match('CONCATENATION')
-                self.expression()
-                if not self.match('AN'):
-                    self.errors.append(f"Syntax Error: Expected {'CONNECTOR'}, found {self.tokens[self.pos-1][1]} at line {self.tokens[self.pos-1][2]}")
-                    return
-                self.expression()
+                new_value = self.concatenation()
 
-                self.pos -= 1
+                self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
+                                for var_type, name, value in self.symbol_table]
 
             else:
                 self.errors.append(f"Syntax Error: Expected 'TYPECAST OR IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
@@ -927,12 +936,12 @@ class LOL:
                         self.match('PRINT')
                         val = self.printoutput()
                         if val == 'err':
-                            return
+                            return val
                     elif self.tokens[self.pos][1] == 'INPUT':
                         self.match('INPUT')
                         val = self.getinput()
                         if val == 'err':
-                            return
+                            return val
                     elif self.tokens[self.pos][0] == 'GTFO':
                         self.match('GTFO')
                         break
@@ -978,40 +987,40 @@ class LOL:
                 return False
 
     def expression(self):
-        strings = []
-        concatenated = ""
-        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER', 'TROOF']:
             if self.tokens[self.pos][1] == 'IDENTIFIER':
                 var_name = self.tokens[self.pos][0]
                 variable = next((var for var in self.symbol_table if var[1] == var_name), None)
                 if not variable:
                     self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
-                print(variable)
-                strings.append(variable[2])
-            elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR']:
-                strings.append(str( self.tokens[self.pos][0]))
-            self.pos += 1
-
-            while(self.match('CONNECTOR')):
-                if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
-                    if self.tokens[self.pos][1] == 'IDENTIFIER':
-                        var_name = self.tokens[self.pos][0]
-                        variable = next((var for var in self.symbol_table if var[1] == var_name), None)
-                        if not variable:
-                            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
-                        strings.append(variable[2])
-                    elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR']:
-                        strings.append(str( self.tokens[self.pos][0]))
-                    self.pos += 1
-                else:
-                    self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")                
-            concatenated = strings[0]  
-            if len(strings) > 1:
-                concatenated += " " + " ".join(strings[1:])
-
-            return concatenated
+                    return 'err'
+                
+                self.pos += 1
+                return variable[2]
+            elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF']:
+                new = self.tokens[self.pos][0]
+                self.pos += 1
+                return new
+        
         else:
             self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return 'err'
+
+
+    def concatenation(self):
+        if self.match('CONCATENATION'):
+
+            val = str(self.expression())
+            while self.tokens[self.pos][1] == 'CONNECTOR':
+                self.match('AN')
+                val = val + str(self.expression())
+
+            return val
+        else:
+            self.errors.append(f"Syntax Error: Expected 'CONCATENATION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            return 'err'
+
+
 
     def typecast(self):
         var_name = self.tokens[self.pos][0] 
