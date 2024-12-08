@@ -427,7 +427,6 @@ class LOL:
             
 
             elif curr[1] == 'BOOLEAN':
-                self.match('BOOLEAN')
                 self.boolean()
 
             
@@ -483,33 +482,75 @@ class LOL:
                 break
 
     def comparison(self):
+        op = self.tokens[self.pos][0]
+            
         if not self.match('COMPARISON'):
             self.errors.append(f"Syntax Error: Expected {'COMPARISON'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
         
         if self.tokens[self.pos][1] == 'ARITHMETIC':
-            self.match('ARITHMETIC')
-            self.arithmetic()
+
+            val1 = self.arithmetic()
             self.match('AN')
 
             if self.tokens[self.pos][1] == 'ARITHMETIC':
-                self.match('ARITHMETIC')
-                self.arithmetic()
+
+                val2 = self.arithmetic()
             else:
-                self.expression()
+                val2 = self.expression()
 
         elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'TROOF', 'YARN', 'IDENTIFIER']:
-            self.expression()
+            val1 = self.expression()
             self.match('AN')
             if self.tokens[self.pos][1] == 'ARITHMETIC':
-                self.match('ARITHMETIC')
-                self.arithmetic()
+                
+                val2 = self.arithmetic()
             else:
-                self.expression()
+                val2 = self.expression()
         else:
-            self.expression()
+            val1 = self.expression()
             self.match('AN')
-            self.expression()
+            val2 = self.expression()
+
+        if op == 'BOTH SAEM':
+
+            if type(val1) == float:
+                man =  float(val1) == float(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
+            elif type(val2) == float:
+                man = float(val1) == float(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
+            else:
+                man = int(val1) == int(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
+        else:
+            if type(val1) == float:
+                man = float(val1) != float(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
+            elif type(val2) == float:
+                man = float(val1) != float(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
+            else:
+                man = int(val1) != int(val2)
+                if man == True:
+                    return 'WIN'
+                else:
+                    return 'FAIL'
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
@@ -617,6 +658,7 @@ class LOL:
                     else:
                         to_print = to_print + str(variable[2])
                 else:
+                    print("THIS IS DA WAE", self.tokens[self.pos][0])
                     to_print = to_print + str(self.tokens[self.pos][0].replace('"',''))
                 self.pos+=1
             
@@ -631,37 +673,86 @@ class LOL:
             elif self.match('CONCATENATION'):
                 concat = self.expression()
                 to_print = to_print + concat
+            
+            elif self.tokens[self.pos][1] == 'BOOLEAN':
+                bools = self.boolean()
+                if bools == True:
+                    to_print = to_print + 'WIN'
+                else:
+                    to_print = to_print + 'FAIL'
+            
+            elif self.tokens[self.pos][1] == 'COMPARISON':
+                comp = self.comparison()
+                to_print = to_print + str(comp)
             else:
                 break
         self.console_text.insert(tk.END,(to_print + "\n"))
 
     def boolean(self):
-
-        var_name = self.tokens[self.pos][0] 
-        variable = next((var for var in self.symbol_table if var[1] == var_name), None)
-
-        if not variable:
-            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
-            return
         
-        if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            return
+        operation = self.tokens[self.pos][0]
+        self.pos += 1
+        operands = []
 
-        cnt = 0
+        # Collect operands for boolean operation
+        while self.tokens[self.pos][1] in ['IDENTIFIER', 'TROOF', 'NUMBR', 'NUMBAR', 'CONNECTOR', 'BOOLEAN']:
+            print(f"Processing token: {self.tokens[self.pos]}")
 
-        while self.tokens[self.pos][1] == 'CONNECTOR':
-            self.match('CONNECTOR')
-            if self.tokens[self.pos][1] in ['IDENTIFIER', 'NUMBR', 'NUMBAR', 'YARN', 'TROOF']:
-                self.match(self.tokens[self.pos][1])
-            else:
-                self.errors.append(f"Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            cnt += 1
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+                var_name = self.tokens[self.pos][0]
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+                
+                print("Variable:", variable)
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                    return None
+                
+                # convert WIN or FAIL to true or false para akma sa python
+                value = variable[2]  # 'WIN' or 'FAIL'
+                operands.append(True if value == 'WIN' else False)
+            
+            elif self.tokens[self.pos][1] == 'TROOF':
+                literal = self.tokens[self.pos][0]
+                operands.append(True if literal == 'WIN' else False)
+            
+            elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR']:
+                if self.tokens[self.pos][0] != None:
+                    operands.append(True)
+                else:
+                    operands.append(False)
+            
+            elif self.tokens[self.pos][1] == 'BOOLEAN':
+                operands.append(self.tokens[self.pos][0])
+            
+            elif self.tokens[self.pos][1] == 'CONNECTOR':
+                pass  # Ignore AN
+            
+            self.pos += 1
         
-        if cnt > 1:
-            if not self.match('CONFIRMATION'):
-                self.errors.append(f"Error: Expected 'CONFIRMATION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-                return
+        self.match('CONFIRMATION')
+        
+        print('OPERATION', operation, 'at line', self.tokens[self.pos-1][2])
+        print('OPERANDS', operands)
+        print('SPACE PEOPLE \n\n')
+        # Perform the boolean operation
+        if operation == 'BOTH OF':
+            result = bool(operands[0]) and bool(operands[1])
+        elif operation == 'EITHER OF':
+            result = bool(operands[0]) or bool(operands[1])
+        elif operation == 'WON OF':
+            result = bool(operands[0]) != bool(operands[1])
+        elif operation == 'NOT':
+            result = not bool(operands[0])
+        elif operation == 'ALL OF':
+            result = all(bool(op) for op in operands)
+        elif operation == 'ANY OF':
+            result = any(bool(op) for op in operands)
+        else:
+            self.errors.append(f"Unknown boolean operation '{operation}' at line {self.tokens[self.pos][2]}")
+            return None
+
+        return result
+  
   
     def loops(self):
         loopname = self.tokens[self.pos][0]
@@ -840,6 +931,8 @@ class LOL:
                         break
             else:
                 break
+            print("OPPSSSS",operations)
+            print('\n\n')
             self.pos += 1
 
         for element in reversed(operations):
@@ -873,11 +966,29 @@ class LOL:
             if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
                 if self.tokens[self.pos][1] in ['YARN', 'TROOF']:
                     new_value = self.tokens[self.pos][0]
+
+                    if self.tokens[self.pos][1] == 'TROOF':
+                        self.symbol_table = [('TROOF', var_name, new_value) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+                    else:
+                        self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+                elif self.tokens[self.pos][1] == 'IDENTIFIER':
+                    var_name = self.tokens[self.pos][0] 
+                    variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+
+                    if not variable:
+                        self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                        self.pos += 2
+                        return
+                    
+                    self.symbol_table = [(variable[1], var_name, variable[2]) if name == var_name else (var_type, name, value)
+                                for var_type, name, value in self.symbol_table]
                 else:
                     new_value = int(self.tokens[self.pos][0])
 
-                self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
-                                for var_type, name, value in self.symbol_table]
+                    self.symbol_table = [(var_type, var_name, new_value) if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
                 
                 self.pos += 1
                 
@@ -1068,6 +1179,8 @@ class LOL:
             self.lex_text.delete(item)
         for item in self.syntax_text.get_children():
             self.syntax_text.delete(item)
+        for item in self.symbol_text.get_children():
+            self.symbol_text.delete(item)
 
 #CREATE AND RUN THE APP
 root = tk.Tk()
