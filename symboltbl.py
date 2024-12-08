@@ -18,14 +18,14 @@ token_types = [
     ('INPUT', r'GIMMEH'),
     ('PRINT', r'VISIBLE'),
     ('ASSIGNMENT', r'R'),
+    ('BOOLEAN', r'(BOTH OF)|(EITHER OF)|(WON OF)|(NOT)|(ALL OF)|(ANY OF)'),
     ('CONNECTOR', r'AN|\+'),
     ('CONCATENATION', r'SMOOSH'),
     ('ARITHMETIC', r'(SUM OF)|(DIFF OF)|(PRODUKT OF)|(QUOSHUNT OF)|(BIGGR OF)|(SMALLR OF)|(MOD OF)'),
-    ('BOOLEAN', r'(BOTH OF)|(EITHER OF)|(WON OF)|(NOT)|(ALL OF)|(ANY OF)'),
     ('COMPARISON', r'(BOTH SAEM)|(DIFFRINT)'),
     ('TYPECAST', r'(MAEK)|(IS NOW A)|(A)'),
     ('CONDITIONAL', r'(O RLY\?|YA RLY|MEBBE|NO WAI|OIC)'),
-    ('SWITCH', r'(WTF\?|OMG|OMGWTF)'),
+    ('SWITCH', r'(WTF\?|OMGWTF|OMG)'),
     ('LOOP', r'(IM IN YR|UPPIN|NERFIN|YR|TIL|WILE|IM OUTTA YR)'),
     ('FUNCTION', r'(HOW IZ I|IF U SAY SO|GTFO|FOUND YR|I IZ)'),
     ('CONFIRMATION', r'MKAY'),
@@ -236,8 +236,9 @@ class LOL:
 
             tokenized = get_token(code, tokenized.end())
         for i in token_arr:
-            print (i)
-        print("Token Array: ", token_arr)
+            pass
+            # print (i)
+        # print("Token Array: ", token_arr)
         return token_arr
 
     def lexical(self):
@@ -247,8 +248,8 @@ class LOL:
             messagebox.showwarning("No Code", "Text editor is empty!")
             return
 
-        print(f"{'Lexeme':<40} {'Token Type':<40} {'Line':<40}")
-        print("=" * 85)
+        # print(f"{'Lexeme':<40} {'Token Type':<40} {'Line':<40}")
+        # print("=" * 85)
 
         all_tokens = []
         self.lex_line = []
@@ -264,11 +265,11 @@ class LOL:
             tokens = self.tokenize(line, line_number)
             self.tokens.append(tokens)
             all_tokens.append(tokens)
-            if not self.error:
-                for value, type_ ,line in tokens:
-                    print(f"{value:<40} {type_:<40} {line_number:<40}")
-            else:
-                print("Lexeme Error: Lexeme Mismatch")
+            # if not self.error:
+            #     for value, type_ ,line in tokens:
+            #         print(f"{value:<40} {type_:<40} {line_number:<40}")
+            # else:
+            #     print("Lexeme Error: Lexeme Mismatch")
 
         if self.error:
             self.lex_text.insert("", "end", values=("ERROR", "ERROR"))
@@ -386,14 +387,19 @@ class LOL:
 
             elif curr[1] == 'IDENTIFIER':
                 self.match('IDENTIFIER')
-                if self.match('ASSIGNMENT'):
+                if self.tokens[self.pos][1] == 'ASSIGNMENT':
+                    self.match('ASSIGNMENT')
                     self.pos -= 2
                     self.assignment()
                     self.pos += 1
-                elif self.match('TYPECAST'):
+                elif self.tokens[self.pos][1] == 'TYPECAST':
+                    self.match('TYPECAST')
                     self.pos -= 2
                     self.typecast()
                     self.pos += 1
+                elif self.tokens[self.pos][1] == 'SWITCH':
+                    self.match('SWITCH')
+                    self.switch()
                 else:
                     self.pos += 1
 
@@ -460,9 +466,30 @@ class LOL:
         if not self.match('COMPARISON'):
             self.errors.append(f"Syntax Error: Expected {'COMPARISON'}, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
-        self.expression()
-        self.match('AN')
-        self.expression()
+        
+        if self.tokens[self.pos][1] == 'ARITHMETIC':
+            self.match('ARITHMETIC')
+            self.arithmetic()
+            self.match('AN')
+
+            if self.tokens[self.pos][1] == 'ARITHMETIC':
+                self.match('ARITHMETIC')
+                self.arithmetic()
+            else:
+                self.expression()
+
+        elif self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'TROOF', 'YARN', 'IDENTIFIER']:
+            self.expression()
+            self.match('AN')
+            if self.tokens[self.pos][1] == 'ARITHMETIC':
+                self.match('ARITHMETIC')
+                self.arithmetic()
+            else:
+                self.expression()
+        else:
+            self.expression()
+            self.match('AN')
+            self.expression()
 
     def variables_start(self):
         if not self.match('VARIABLE_START'):
@@ -544,9 +571,13 @@ class LOL:
             return
 
         cnt = 0
+
         while self.tokens[self.pos][1] == 'CONNECTOR':
             self.match('CONNECTOR')
-            self.match('IDENTIFIER')
+            if self.tokens[self.pos][1] in ['IDENTIFIER', 'NUMBR', 'NUMBAR', 'YARN', 'TROOF']:
+                self.match(self.tokens[self.pos][1])
+            else:
+                self.errors.append(f"Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             cnt += 1
         
         if cnt > 1:
@@ -558,48 +589,142 @@ class LOL:
 
     
     def loops(self):
+        loopname = self.tokens[self.pos][0]
+
         if not self.match('IDENTIFIER'):
-            self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
 
-        if not self.match('TIL'):
-            self.errors.append(f"Error: Expected 'TIL', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+        while self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
+            print("THISISSS DOOOEEEE", self.tokens[self.pos])
+            if self.tokens[self.pos][0] == 'UPPIN':
+                self.match('UPPIN')
+                self.match('YR')
+                self.match('EXPRESSION')
+            elif self.tokens[self.pos][0] == 'NERFIN':
+                self.match('NERFIN')
+                self.match('YR')
+                self.match('EXPRESSION')
+            elif self.tokens[self.pos][0] in ['TIL', 'WILE']:
+                self.match('LOOP')
+                if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER', 'YARN', 'TROOF']:
+                    self.expression()
+                elif self.tokens[self.pos][1] == 'COMPARISON':
+                    self.comparison()
+                else:
+                    self.errors.append(f"Syntax Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                    return
+            else:
+                self.pos += 1
+        
+        while self.tokens[self.pos][0] != 'IM OUTTA YR':
+            print("BUTTTTTTT DOOOEEEE", self.tokens[self.pos])
+            if self.tokens[self.pos][1] == 'PRINT':
+                self.match('PRINT')
+                val = self.printoutput()
+                if val == 'err':
+                    return
+
+            elif self.tokens[self.pos][1] == 'INPUT':
+                self.match('INPUT')
+                val = self.getinput()
+                if val == 'err':
+                    return 
+            else:
+                self.pos += 1
+        
+        if self.tokens[self.pos][0] == 'IM OUTTA YR':
+            self.match("LOOP")
+            if loopname == self.tokens[self.pos][0]:
+                self.match('IDENTIFIER')
+        else:
             return
+        
+
 
     def conditionals(self):
-        if not self.match('CONDITIONAL'):
-            self.errors.append(f"Error: Expected 'CONDITIONAL', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            return
-
         if not self.match('YA RLY'):
-            self.errors.append(f"Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            self.errors.append(f"Syntax Error: Expected 'YA RLY', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
 
-        self.expression()
+        while not self.tokens[self.pos][0] in  ['OIC', 'NO WAI']:
+            if self.tokens[self.pos][1] == 'PRINT':
+                self.match('PRINT')
+                val = self.printoutput()
+                if val == 'err':
+                    return
 
-        if not self.match('NO WAI'):
-            self.errors.append(f"Error: Expected 'NO WAI', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            elif self.tokens[self.pos][1] == 'INPUT':
+                self.match('INPUT')
+                val = self.getinput()
+                if val == 'err':
+                    return
+            else:
+                self.pos += 1
+
+        if self.tokens[self.pos][0] == 'NO WAI':
+            self.match('NO WAI')
+
+            while self.tokens[self.pos][0] != 'OIC':
+                if self.tokens[self.pos][1] == 'PRINT':
+                    self.match('PRINT')
+                    val = self.printoutput()
+                    if val == 'err':
+                        return
+                elif self.tokens[self.pos][1] == 'INPUT':
+                    self.match('INPUT')
+                    val = self.getinput()
+                    if val == 'err':
+                        return
+                else:
+                    self.errors.append(f"Syntax Error: Expected 'ERRRORR', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                    return
+            
+            if self.tokens[self.pos][0] == 'OIC':
+                self.match('OIC')
+                return
+            else:
+                self.errors.append(f"Syntax Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                return
+
+        elif self.tokens[self.pos][0] == 'OIC':
+            self.match('OIC')
+            return
+        else:
+            self.errors.append(f"Syntax Error: Expected 'NO WAI or OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
 
-        if not self.match('OIC'):
-            self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            return
+      
 
     def arithmetic(self):
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-            if self.tokens[self.pos][0] not in self.symbol_table:
-                self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+
+                var_name = self.tokens[self.pos][0] 
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                    return
+                
             self.pos += 1
         else:
             self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
-        while self.match('CONNECTOR'):
-            if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-                if self.tokens[self.pos][0] not in self.symbol_table:
-                    self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
-                self.pos += 1
-            else:
-                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+    
+        self.match('CONNECTOR')
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+                var_name = self.tokens[self.pos][0] 
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                    return
+                
+            self.pos += 1
+        else:
+            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
 
 
     def assignment(self):    
@@ -653,15 +778,52 @@ class LOL:
 
     def switch(self):
 
-        while self.pos < len(self.tokens):
+        print(self.tokens[self.pos])
+        while self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
+
             if self.tokens[self.pos][0] == 'OMG':
-                self.match("OMG")
+                self.match('OMG')
                 self.expression()
+                print('ABOT BA ADITO')
+                while not self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
+                    if self.tokens[self.pos][1] == 'PRINT':
+                        self.match('PRINT')
+                        val = self.printoutput()
+                        if val == 'err':
+                            return
+                    elif self.tokens[self.pos][1] == 'INPUT':
+                        self.match('INPUT')
+                        val = self.getinput()
+                        if val == 'err':
+                            return
+                    elif self.tokens[self.pos][0] == 'GTFO':
+                        self.match('GTFO')
+                        break
+                    else:
+                        self.pos += 1
+
             elif self.tokens[self.pos][0] == 'OMGWTF':
-                self.match("OMGWTF")
-                self.expression()
+                self.match('OMGWTF')
+
+                while not self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
+                    if self.tokens[self.pos][1] == 'PRINT':
+                        self.match('PRINT')
+                        val = self.printoutput()
+                        if val == 'err':
+                            return
+                    elif self.tokens[self.pos][1] == 'INPUT':
+                        self.match('INPUT')
+                        val = self.getinput()
+                        if val == 'err':
+                            return
+                    elif self.tokens[self.pos][0] == 'GTFO':
+                        self.match('GTFO')
+                        break
+                    else:
+                        self.pos += 1
+
             elif self.tokens[self.pos][0] == 'OIC':
-                self.match("OIC")
+                self.match('OIC')
                 break
             else:
                 self.errors.append(f"Syntax Error: Unexpected token in SWITCH, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
@@ -699,19 +861,17 @@ class LOL:
                 return False
 
     def expression(self):
-        if self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
-            if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
-                if self.tokens[self.pos][1] == 'IDENTIFIER':
-                    var_name = self.tokens[self.pos][0]
-                    variable = next((var for var in self.symbol_table if var[1] == var_name), None)
-                    if not variable:
-                        self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
-                self.pos += 1
-            else:
-                self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'IDENTIFIER']:
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+                var_name = self.tokens[self.pos][0]
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+            self.pos += 1
         else:
-            return
-    
+            self.errors.append(f"Syntax Error: Expected an expression, but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+
+
     def typecast(self):
         var_name = self.tokens[self.pos][0] 
         variable = next((var for var in self.symbol_table if var[1] == var_name), None)
