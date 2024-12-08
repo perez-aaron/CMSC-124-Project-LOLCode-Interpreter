@@ -1043,9 +1043,22 @@ class LOL:
 
         new_type = self.tokens[self.pos][0]
 
-        self.symbol_table = [(new_type, var_name, value) if name == var_name else (var_type, name, value)
-                            for var_type, name, value in self.symbol_table]
-          
+        if new_type == 'NUMBR':
+            self.symbol_table = [(new_type, var_name, int(value)) if name == var_name else (var_type, name, value)
+                                for var_type, name, value in self.symbol_table]
+        elif new_type == 'NUMBAR':
+            self.symbol_table = [(new_type, var_name, float(value)) if name == var_name else (var_type, name, value)
+                                for var_type, name, value in self.symbol_table]
+        elif new_type == 'YARN':
+            self.symbol_table = [(new_type, var_name, str(value)) if name == var_name else (var_type, name, value)
+                                for var_type, name, value in self.symbol_table]
+        elif new_type == 'TROOF':
+            if variable[2] != None:
+                self.symbol_table = [(new_type, var_name, 'WIN') if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
+            else:
+                self.symbol_table = [(new_type, var_name, 'FAIL') if name == var_name else (var_type, name, value)
+                                    for var_type, name, value in self.symbol_table]
     def reset(self):
         self.lexical_analyze_button.config(state=tk.NORMAL)
         self.symbol_table.clear()
