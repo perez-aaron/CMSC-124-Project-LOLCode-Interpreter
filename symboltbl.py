@@ -1217,7 +1217,7 @@ class LOL:
             if(var[1] == self.tokens[self.pos][0]):
                 value = var[2]
         self.pos +=2
-        print('CURRENT', self.tokens[self.pos])
+
         while self.tokens[self.pos][0] in ['OMG', 'OMGWTF']:
             if self.tokens[self.pos][0] == 'OMG':
                 self.match('OMG')
@@ -1233,7 +1233,7 @@ class LOL:
                             val = self.getinput()
                             if val == 'err':
                                 return
-                            print(self.symbol_table)
+
                         else:
                             self.pos +=1
                     self.pos +=1
