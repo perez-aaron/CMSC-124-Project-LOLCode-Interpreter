@@ -859,8 +859,28 @@ class LOL:
                         if cnt == 0:
                             break
                     else:
-                        False
-                    
+                        bool1 = False
+
+                elif self.tokens[self.pos][1] == 'ARITHMETIC':
+                    ekko = self.pos
+                    bool1 = self.arithmetic()
+                    if bool1 != None:
+                        bool1 = True
+                        if cnt == 0:
+                            break
+                    else:
+                        bool1 = False
+                
+
+                elif self.tokens[self.pos][1] == 'BOOLEAN':
+                    ekko = self.pos
+                    bool1 = self.boolean()
+                    if bool1 != None:
+                        bool1 = True
+                        if cnt == 0:
+                            break
+                    else:
+                        bool1 = False
 
                 else:
                     self.errors.append(f"Syntax Error: Expected 'EXPRESSION', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
@@ -939,6 +959,27 @@ class LOL:
                     ekko = self.pos
                     bool1 = self.comparison()
                     if bool1 == 'WIN':
+                        bool1 = True
+                    else:
+                        bool1 = False
+                        if cnt == 0:
+                            break
+                
+
+                elif self.tokens[self.pos][1] == 'ARITHMETIC':
+                    ekko = self.pos
+                    bool1 = self.arithmetic()
+                    if bool1 != None:
+                        bool1 = True
+                    else:
+                        bool1 = False
+                        if cnt == 0:
+                            break
+                
+                elif self.tokens[self.pos][1] == 'BOOLEAN':
+                    ekko = self.pos
+                    bool1 = self.boolean()
+                    if bool1 != None:
                         bool1 = True
                     else:
                         bool1 = False
