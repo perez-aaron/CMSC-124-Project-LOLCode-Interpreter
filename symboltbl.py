@@ -79,7 +79,7 @@ class LOL:
         self.reset_button = tk.Button(self.file_frame, text="RESET", background='#1F1F1F', fg='white', font=bold_font, width=10, height=2, command=self.reset)
         self.reset_button.pack(side=tk.TOP, padx=10, pady=10)
 
-            # CODEBASE FRAME
+        # CODEBASE FRAME
         self.code_frame = tk.Frame(self.root, background="#1F1F1F")
         self.code_label = tk.Label(self.code_frame, text="CODE", font=bold_font, fg='white', background='#1F1F1F')
         self.code_label.pack(side=tk.TOP)
@@ -131,12 +131,19 @@ class LOL:
 
         style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
 
-        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Error"), show = "headings", style="Treeview")
-        self.syntax_text.heading("Error", text="Error")
+        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Output"), show = "headings", style="Treeview")
+        self.syntax_text.heading("Output", text="Output")
         self.syntax_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.syntax_scrollbar = tk.Scrollbar(self.syntax_frame, orient=tk.VERTICAL, command=self.syntax_text.yview, background="grey")
         self.syntax_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.syntax_text.config(yscrollcommand=self.lex_scrollbar.set)
+
+        #CONSOLE FRAME
+        self.console_frame = tk.Frame(self.root, background="#1F1F1F")
+        self.console_label = tk.Label(self.console_frame, text="CONSOLE",font=bold_font,fg='white',background='#1F1F1F')
+        self.console_label.pack(side=tk.TOP)
+        self.console_text = tk.Text(self.console_frame, wrap=tk.WORD, background='#292929', fg='white')
+        self.console_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         #GRID
         self.root.columnconfigure(0, weight = 1)
@@ -145,12 +152,14 @@ class LOL:
         self.root.rowconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=40)
         self.root.rowconfigure(2, weight=40)
+        self.root.rowconfigure(3, weight=40)
 
         self.title_frame.grid(row=0, column=0, columnspan=3,sticky='nswe')
         self.file_frame.grid(row=1,column=0, rowspan=3,sticky='nswe')
         self.code_frame.grid(row=1,column=1, rowspan=3,sticky='nswe')
         self.lex_frame.grid(row=1,column=2,sticky='nswe')
         self.syntax_frame.grid(row=2,column=2,sticky='nswe')
+        self.console_frame.grid(row=3,column=2, sticky='nswe')
 
     def sync_scroll(self, *args):
         self.code_text.yview(*args)
@@ -476,17 +485,29 @@ class LOL:
         var_type = self.tokens[self.pos][1]  
         var_value = None
 
+        #For value literal
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
-            var_value = self.tokens[self.pos][0]
+            if(self.tokens[self.pos][1] == 'NUMBR'):
+                var_value = int(self.tokens[self.pos][0])
+            elif(self.tokens[self.pos][1] == 'NUMBAR'):
+                var_value = float(self.tokens[self.pos][0])
+            elif(self.tokens[self.pos][1] == 'TROOF'):
+                if(self.tokens[self.pos][0] == 'WIN'):
+                    var_value = True
+                elif(self.tokens[self.pos][0] == 'FAIL'):
+                    var_value = False
+            else:            
+                var_value = self.tokens[self.pos][0]
             self.pos += 1
         
-
+        #For operations
+        elif self.tokens[self.pos][1]  == 'ARITHMETIC':
+            var_value = self.arithmetic()
+        
         self.symbol_table.append((var_type, var_name, var_value))
-        print(f"Declared {var_name} of type {var_type}")
-
 
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
-            self.pos += 1  
+            self.pos += 1   
 
     def getinput(self):
         if not self.match('IDENTIFIER'):
@@ -495,10 +516,28 @@ class LOL:
 
     def printoutput(self):
         while self.pos < len(self.tokens):
-            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC', 'CONCATENATION', 'COMPARISON'] and self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
+            #FOR VALUE LITERAL
+            if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER'] and self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
+                is_var = False
+                for var in self.symbol_table:
+                    if var[1] == self.tokens[self.pos][0]:
+                        if(var[0] == 'NOOB'):
+                            self.console_text.insert(tk.END, (str(var[0]) + "\n"))          
+                        else:
+                            self.console_text.insert(tk.END, (str(var[2]) + "\n"))
+                        is_var = True
+                        break
+                if is_var == False:    
+                    self.console_text.insert(tk.END,(self.tokens[self.pos][0] + "\n"))
                 self.pos += 1
+            #FOR ARITHMETIC EXPRESSIONS
+            elif self.tokens[self.pos][1] == 'ARITHMETIC':
+                answer = self.arithmetic()
+                self.console_text.insert(tk.END,(str(answer) + "\n"))
+
+            #FOR COMPARISON
             else:
-                break
+                break        
     
     def loops(self):
         if not self.match('IDENTIFIER'):
@@ -528,21 +567,78 @@ class LOL:
             self.errors.append(f"Error: Expected 'OIC', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
 
+    def sum_of(self,a,b):
+        return a+b
+    def diff_of(self,a,b):
+        return a-b
+    def produkt_of(self,a,b):
+        return a*b
+    def quoshunt_of(self,a,b):
+        return a/b
+    def biggr_of(self,a,b):
+        return (max(a,b))
+    def smallr_of(self,a,b):
+        return (min(a,b))
+    def mod_of(self,a,b):
+        return (a%b)
+    
     def arithmetic(self):
-        if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-            if self.tokens[self.pos][0] not in self.symbol_table:
-                self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
+        operators = {
+            'SUM OF': self.sum_of,
+            'DIFF OF': self.diff_of,
+            'PRODUKT OF': self.produkt_of,
+            'QUOSHUNT OF': self.quoshunt_of,
+            'BIGGR OF': self.biggr_of,
+            'SMALLR OF': self.smallr_of,
+            'MOD OF': self.mod_of
+        }
+        operations = []
+        answers = []
+        while self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC', 'YARN', 'TROOF']:
+            token_type = self.tokens[self.pos][1]
+            token_value = self.tokens[self.pos][0]
+            print(token_value, token_type)
+            if token_type == 'ARITHMETIC':
+                operations.append(token_value)
+            elif token_type == 'IDENTIFIER':
+                is_var = False
+                for var in self.symbol_table:
+                    if token_value == var[1]:
+                        operations.append(var[2])
+                        is_var = True
+                        break
+                if not is_var:
+                    self.errors.append(f"Semantic Error: Variable '{token_value}' is not declared at line {self.tokens[self.pos][2]}")
+                    return
+            elif token_type == 'NUMBR':
+                operations.append(int(token_value))
+            elif token_type == 'NUMBAR':
+                operations.append(float(token_value))
+            elif token_type == 'TROOF':
+                if(token_value == 'WIN'):
+                    operations.append(1)
+                elif(token_value == 'FAIL'):
+                    operations.append(0)
+            elif token_type == 'YARN':
+                cleaned_string = token_value.strip('"')
+                operations.append(float(cleaned_string))
+            elif token_type == 'CONNECTOR':
+                pass
             self.pos += 1
-        else:
-            self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-
-        while self.match('CONNECTOR'):
-            if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR','IDENTIFIER']:
-                if self.tokens[self.pos][0] not in self.symbol_table:
-                    self.errors.append(f"Semantic Error: Variable '{self.tokens[self.pos][0] }' is not declared at line {self.tokens[self.pos][2]}")
-                self.pos += 1
+        print(operations)
+        for element in reversed(operations):
+            print(element,answers)
+            if isinstance(element, (int, float)):
+                answers.append(element)
+            elif(len(answers) <= 1):
+                self.errors.append(f"Semantic Error: Variable '{token_value}' invalid length of operator/operations {self.tokens[self.pos][2]}")
+                return 
             else:
-                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+                operand1 = answers.pop()
+                operand2 = answers.pop()
+                result = operators[element](operand1, operand2)
+                answers.append(result)
+        return answers[0]
 
 
     def assignment(self):    
@@ -656,6 +752,7 @@ class LOL:
         self.lexical_analyze_button.config(state=tk.NORMAL)
         self.symbol_table.clear()
         self.tokens.clear()
+        self.console_text.delete("1.0",tk.END)
         for item in self.lex_text.get_children():
             self.lex_text.delete(item)
         for item in self.syntax_text.get_children():
