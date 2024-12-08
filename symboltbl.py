@@ -534,6 +534,8 @@ class LOL:
 
         if self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'YARN', 'TROOF', 'IDENTIFIER']:
             self.pos += 1  
+        
+        print(f"Declared {var_name} of type {var_type}")
 
     def textinput(self, event=None):
         user_input = self.console_text.get(f"1.0 + {self.length} chars", tk.END).strip()    
@@ -541,9 +543,18 @@ class LOL:
         self.console_text.unbind("<Return>")
 
     def getinput(self):
+        var_name = self.tokens[self.pos][0] 
+        variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+
+        if not variable:
+            self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+            return 'err'
+
         if self.tokens[self.pos][1] != 'IDENTIFIER':
             self.errors.append(f"Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
             return
+        
+        #EXECUTION
         self.pos+=1
         var_name = self.tokens[self.pos-1][0]
 
@@ -569,19 +580,21 @@ class LOL:
         while self.pos < len(self.tokens):
             #FOR VALUE LITERAL
             if self.tokens[self.pos][1] in ['YARN', 'NUMBR', 'NUMBAR', 'TROOF', 'IDENTIFIER'] and self.tokens[self.pos][2] == self.tokens[self.pos-1][2]:
-                is_var = False
-                for var in self.symbol_table:
-                    if var[1] == self.tokens[self.pos][0]:
-                        if(var[0] == 'NOOB'):
-                            to_print = to_print + str(var[0])                                      
-                        else:
-                            to_print = to_print + str(var[2])
-                        is_var = True
-                        break
-                if is_var == False:    
-                    to_print = to_print + str(self.tokens[self.pos][0].replace('"',''))
-                self.pos += 1
+                if self.tokens[self.pos][1] == 'IDENTIFIER':
+                    var_name = self.tokens[self.pos][0] 
+                    variable = next((var for var in self.symbol_table if var[1] == var_name), None)
 
+                    if not variable:
+                        self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                        return 'err'
+                    elif(variable[0] == 'NOOB'):
+                        to_print = to_print + str(variable[0])  
+                    else:
+                        to_print = to_print + str(variable[2])
+                else:
+                    to_print = to_print + str(self.tokens[self.pos][0].replace('"',''))
+                self.pos+=1
+            
             #FOR ARITHMETIC EXPRESSIONS
             elif self.tokens[self.pos][1] == 'ARITHMETIC':
                 answer = self.arithmetic()
@@ -757,6 +770,15 @@ class LOL:
         operations = []
         answers = []
         while self.tokens[self.pos][1] in ['NUMBR', 'NUMBAR', 'IDENTIFIER', 'CONNECTOR', 'ARITHMETIC', 'YARN', 'TROOF']:
+            if self.tokens[self.pos][1] == 'IDENTIFIER':
+                var_name = self.tokens[self.pos][0] 
+                variable = next((var for var in self.symbol_table if var[1] == var_name), None)
+                if not variable:
+                    self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
+                    return
+            else:
+                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
+            
             token_type = self.tokens[self.pos][1]
             token_value = self.tokens[self.pos][0]
 
