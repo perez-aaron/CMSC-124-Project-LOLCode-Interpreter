@@ -1209,54 +1209,55 @@ class LOL:
             return
         
     def switch(self):
-
-        print(self.tokens[self.pos])
-        while self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
-
+        value = None
+        self.pos -=2
+        for var in self.symbol_table:
+            print(self.tokens[self.pos])
+            if(var[1] == self.tokens[self.pos][0]):
+                value = var[2]
+        self.pos +=2
+        while self.tokens[self.pos][0] in ['OMG', 'OMGWTF']:
             if self.tokens[self.pos][0] == 'OMG':
                 self.match('OMG')
-                self.expression()
-                print('ABOT BA ADITO')
-                while not self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
-                    if self.tokens[self.pos][1] == 'PRINT':
-                        self.match('PRINT')
-                        val = self.printoutput()
-                        if val == 'err':
-                            return
-                    elif self.tokens[self.pos][1] == 'INPUT':
-                        self.match('INPUT')
-                        val = self.getinput()
-                        if val == 'err':
-                            return
-                    elif self.tokens[self.pos][0] == 'GTFO':
-                        self.match('GTFO')
-                        break
-                    else:
-                        self.pos += 1
-
+                if self.tokens[self.pos][0] == value:
+                    while(self.tokens[self.pos][0] != 'GTFO'):
+                        if self.tokens[self.pos][1] == 'PRINT':
+                            self.match('PRINT')
+                            val = self.printoutput()
+                            if val == 'err':
+                                return
+                        elif self.tokens[self.pos][1] == 'INPUT':
+                            self.match('INPUT')
+                            val = self.getinput()
+                            if val == 'err':
+                                return
+                        else:
+                            self.pos +=1
+                    self.pos +=1
+                    while(self.tokens[self.pos][0] != 'OIC'):
+                        self.pos +=1
+                    self.pos +=1
+                    return
+                else:
+                    while(self.tokens[self.pos][0] not in ['OMG','OMGWTF']):
+                        self.pos +=1
+                    continue
             elif self.tokens[self.pos][0] == 'OMGWTF':
-                self.match('OMGWTF')
-
-                while not self.tokens[self.pos][0] in ['OMG', 'OMGWTF', 'OIC']:
+                self.pos +=1
+                while(self.pos < len(self.tokens) and self.tokens[self.pos][0] != 'OIC'):
                     if self.tokens[self.pos][1] == 'PRINT':
                         self.match('PRINT')
                         val = self.printoutput()
                         if val == 'err':
-                            return val
+                            return
                     elif self.tokens[self.pos][1] == 'INPUT':
                         self.match('INPUT')
                         val = self.getinput()
                         if val == 'err':
-                            return val
-                    elif self.tokens[self.pos][0] == 'GTFO':
-                        self.match('GTFO')
-                        break
-                    else:
-                        self.pos += 1
-
-            elif self.tokens[self.pos][0] == 'OIC':
-                self.match('OIC')
-                break
+                            return
+                    self.pos +=1
+                self.pos +=1
+                return
             else:
                 self.errors.append(f"Syntax Error: Unexpected token in SWITCH, found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
                 self.pos += 1
