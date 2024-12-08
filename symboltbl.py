@@ -132,8 +132,8 @@ class LOL:
 
         style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
 
-        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("Error"), show = "headings", style="Treeview")
-        self.syntax_text.heading("Error", text="Error")
+        self.syntax_text = ttk.Treeview(self.syntax_frame, columns = ("output"), show = "headings", style="Treeview")
+        self.syntax_text.heading("output", text="output")
         self.syntax_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.syntax_scrollbar = tk.Scrollbar(self.syntax_frame, orient=tk.VERTICAL, command=self.syntax_text.yview, background="grey")
         self.syntax_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -146,6 +146,26 @@ class LOL:
         self.console_text = tk.Text(self.console_frame, wrap=tk.WORD, background='#292929', fg='white')
         self.console_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        #SYMBOL TABLE
+        self.symbol_frame = tk.Frame(self.root, background="#1F1F1F")
+        self.symbol_label = tk.Label(self.symbol_frame, text="SYMBOL TABLE",font=bold_font,fg='white',background='#1F1F1F')
+        self.symbol_label.pack(side=tk.TOP)
+
+        style = ttk.Style()
+        style.configure("Treeview", background="#292929", fieldbackground="#292929", foreground="white")
+        style.configure("Treeview.Heading", background="#292929", foreground="black")  
+
+        style.map("Treeview", background=[("selected", "black")], foreground=[("selected","white")])
+
+        self.symbol_text = ttk.Treeview(self.symbol_frame, columns = ("variable","type","value"), show = "headings", style="Treeview")
+        self.symbol_text.heading("variable", text="variable")
+        self.symbol_text.heading("type", text="type")
+        self.symbol_text.heading("value", text="value")
+        self.symbol_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.symbol_scrollbar = tk.Scrollbar(self.symbol_frame, orient=tk.VERTICAL, command=self.syntax_text.yview, background="grey")
+        self.symbol_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.symbol_text.config(yscrollcommand=self.lex_scrollbar.set)
+
         #GRID
         self.root.columnconfigure(0, weight = 1)
         self.root.columnconfigure(1, weight = 8)
@@ -154,13 +174,15 @@ class LOL:
         self.root.rowconfigure(1, weight=40)
         self.root.rowconfigure(2, weight=40)
         self.root.rowconfigure(3, weight=40)
+        self.root.rowconfigure(4, weight=60)
 
         self.title_frame.grid(row=0, column=0, columnspan=3,sticky='nswe')
         self.file_frame.grid(row=1,column=0, rowspan=3,sticky='nswe')
         self.code_frame.grid(row=1,column=1, rowspan=3,sticky='nswe')
         self.lex_frame.grid(row=1,column=2,sticky='nswe')
         self.syntax_frame.grid(row=2,column=2,sticky='nswe')
-        self.console_frame.grid(row=3,column=2, sticky='nswe')
+        self.symbol_frame.grid(row=3,column=2, sticky='nswe')
+        self.console_frame.grid(row=4,column=0,columnspan=3, sticky='nswe')
 
     def sync_scroll(self, *args):
         self.code_text.yview(*args)
@@ -316,6 +338,9 @@ class LOL:
         else:
             print("Completed successfully!")
             self.syntax_text.insert("", "end", values=("Completed",))
+
+        for i in range (len(self.symbol_table)):
+            self.symbol_text.insert("", "end", values=(self.symbol_table[i][1], self.symbol_table[i][0],self.symbol_table[i][2]))
 
     def parse_program(self):
 
@@ -775,10 +800,7 @@ class LOL:
                 variable = next((var for var in self.symbol_table if var[1] == var_name), None)
                 if not variable:
                     self.errors.append(f"Semantic Error: Variable '{var_name}' is not declared at line {self.tokens[self.pos][2]}")
-                    return
-            else:
-                self.errors.append(f"Syntax Error: Expected 'IDENTIFIER', but found {self.tokens[self.pos][1]} at line {self.tokens[self.pos][2]}")
-            
+                    return            
             token_type = self.tokens[self.pos][1]
             token_value = self.tokens[self.pos][0]
 
